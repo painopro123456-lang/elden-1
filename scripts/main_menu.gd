@@ -93,6 +93,31 @@ func _button(value: String, primary: bool = false) -> Button:
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	return button
 
+class HeroCarArt extends Control:
+	func _draw() -> void:
+		var c := size
+		var cx := c.x * 0.53
+		var cy := c.y * 0.54
+		var sx := minf(c.x, c.y) * 0.78
+		var body := PackedVector2Array([
+			Vector2(cx, cy-sx*0.58), Vector2(cx+sx*0.075, cy-sx*0.39),
+			Vector2(cx+sx*0.12, cy-sx*0.12), Vector2(cx+sx*0.105, cy+sx*0.28),
+			Vector2(cx+sx*0.18, cy+sx*0.49), Vector2(cx-sx*0.18, cy+sx*0.49),
+			Vector2(cx-sx*0.105, cy+sx*0.28), Vector2(cx-sx*0.12, cy-sx*0.12),
+			Vector2(cx-sx*0.075, cy-sx*0.39)
+		])
+		draw_colored_polygon(body, Color("#202a36"))
+		draw_polyline(PackedVector2Array([body[0],body[1],body[2],body[3],body[4]]), Color("#e32636"), 3.0, true)
+		draw_polyline(PackedVector2Array([body[4],body[5],body[6],body[7],body[8],body[0]]), Color("#e32636"), 3.0, true)
+		draw_rect(Rect2(cx-sx*0.20,cy-sx*0.32,sx*0.40,sx*0.045), Color("#aeb9c6"))
+		draw_rect(Rect2(cx-sx*0.235,cy+sx*0.37,sx*0.47,sx*0.055), Color("#e32636"))
+		draw_rect(Rect2(cx-sx*0.16,cy-sx*0.17,sx*0.32,sx*0.16), Color("#0b1118"))
+		for side in [-1.0,1.0]:
+			for y in [-0.28,0.22]:
+				draw_rect(Rect2(cx+side*sx*0.12-sx*0.035,cy+sx*y-sx*0.07,sx*0.07,sx*0.14), Color("#080b10"))
+		draw_line(Vector2(cx,cy-sx*0.5), Vector2(cx,cy+sx*0.43), Color("#566272"), 1.0)
+		draw_circle(Vector2(cx,cy-sx*0.01), sx*0.025, Color("#e32636"))
+
 func _build_home() -> void:
 	for child in get_children():
 		child.queue_free()
@@ -102,40 +127,44 @@ func _build_home() -> void:
 	add_child(page_root)
 
 	var bg := ColorRect.new()
-	bg.color = BG
+	bg.color = Color("#070a0f")
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	page_root.add_child(bg)
 
-	var top_glow := ColorRect.new()
-	top_glow.color = Color("#101925")
-	top_glow.anchor_left = 0.52
-	top_glow.anchor_right = 1.0
-	top_glow.anchor_bottom = 1.0
-	top_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	page_root.add_child(top_glow)
+	var glow := ColorRect.new()
+	glow.color = Color("#101925")
+	glow.anchor_left = 0.48
+	glow.anchor_right = 1.0
+	glow.anchor_top = 0.12
+	glow.anchor_bottom = 0.91
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	page_root.add_child(glow)
 
 	var header := HBoxContainer.new()
-	header.anchor_left = 0.045
-	header.anchor_right = 0.955
-	header.anchor_top = 0.025
-	header.anchor_bottom = 0.12
-	header.add_theme_constant_override("separation", 28)
+	header.anchor_left = 0.055
+	header.anchor_right = 0.945
+	header.anchor_top = 0.035
+	header.anchor_bottom = 0.125
+	header.add_theme_constant_override("separation", 24)
 	page_root.add_child(header)
 
-	var brand_box := VBoxContainer.new()
-	brand_box.custom_minimum_size = Vector2(230, 0)
-	brand_box.add_child(_label("ELDEN 1", 28, WHITE, true))
-	brand_box.add_child(_label("MOTORSPORT  /  2026", 10, MUTED, true))
-	header.add_child(brand_box)
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(spacer)
+	var brand := VBoxContainer.new()
+	brand.custom_minimum_size = Vector2(210, 0)
+	brand.add_child(_label("ELDEN 1", 27, WHITE, true))
+	brand.add_child(_label("MOTORSPORT  /  2026", 9, MUTED, true))
+	header.add_child(brand)
+	var header_spacer := Control.new()
+	header.add_child(header_spacer)
+	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var season := _label("WORLD CHAMPIONSHIP  ·  SEASON 01", 10, MUTED, true)
+	season.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	header.add_child(season)
 	for nav in ["HOME", "GRAND PRIX", "GARAGE", "SETTINGS"]:
 		var nav_button := Button.new()
 		nav_button.text = nav
 		nav_button.flat = true
-		nav_button.add_theme_font_size_override("font_size", 13)
+		nav_button.add_theme_font_size_override("font_size", 11)
 		nav_button.add_theme_color_override("font_color", RED if nav == "HOME" else MUTED)
 		nav_button.add_theme_color_override("font_hover_color", WHITE)
 		nav_button.pressed.connect(_on_nav_pressed.bind(nav))
@@ -143,92 +172,113 @@ func _build_home() -> void:
 
 	var rule := ColorRect.new()
 	rule.color = LINE
-	rule.anchor_left = 0.045
-	rule.anchor_right = 0.955
-	rule.anchor_top = 0.125
-	rule.anchor_bottom = 0.127
+	rule.anchor_left = 0.055
+	rule.anchor_right = 0.945
+	rule.anchor_top = 0.135
+	rule.anchor_bottom = 0.137
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	page_root.add_child(rule)
 
-	var left := VBoxContainer.new()
-	left.anchor_left = 0.065
-	left.anchor_right = 0.52
-	left.anchor_top = 0.23
-	left.anchor_bottom = 0.80
-	left.add_theme_constant_override("separation", 16)
-	page_root.add_child(left)
-	left.add_child(_label("2026 WORLD CHAMPIONSHIP  /  SEASON 01", 12, RED, true))
-	var hero := _label("THE GRID\nIS YOURS.", 66, WHITE, true)
-	hero.add_theme_color_override("font_outline_color", Color("#080b10"))
-	hero.add_theme_constant_override("line_spacing", -8)
-	left.add_child(hero)
-	left.add_child(_label("Every corner has a cost. Every lap writes the story.", 17, MUTED))
-	var gap := Control.new()
-	gap.custom_minimum_size.y = 10
-	left.add_child(gap)
+	var eyebrow := _label("01   /   THE 2026 SEASON", 11, RED, true)
+	eyebrow.anchor_left = 0.075
+	eyebrow.anchor_right = 0.58
+	eyebrow.anchor_top = 0.225
+	eyebrow.anchor_bottom = 0.265
+	page_root.add_child(eyebrow)
+
+	var hero := _label("OWN\nEVERY\nCORNER.", 67, WHITE, true)
+	hero.anchor_left = 0.07
+	hero.anchor_right = 0.57
+	hero.anchor_top = 0.285
+	hero.anchor_bottom = 0.59
+	hero.add_theme_constant_override("line_spacing", -10)
+	page_root.add_child(hero)
+
+	var subtitle := _label("The lights go out. The fight is yours.", 17, MUTED)
+	subtitle.anchor_left = 0.075
+	subtitle.anchor_right = 0.57
+	subtitle.anchor_top = 0.625
+	subtitle.anchor_bottom = 0.67
+	page_root.add_child(subtitle)
+
 	var actions := HBoxContainer.new()
-	actions.add_theme_constant_override("separation", 14)
-	left.add_child(actions)
-	var start := _button("START RACE   →", true)
-	start.custom_minimum_size = Vector2(230, 58)
+	actions.anchor_left = 0.075
+	actions.anchor_right = 0.60
+	actions.anchor_top = 0.715
+	actions.anchor_bottom = 0.81
+	actions.add_theme_constant_override("separation", 12)
+	page_root.add_child(actions)
+	var start := _button("START RACE     →", true)
+	start.custom_minimum_size = Vector2(220, 58)
 	start.pressed.connect(_show_track_select)
 	actions.add_child(start)
-	var garage := _button("OPEN GARAGE")
-	garage.custom_minimum_size = Vector2(180, 58)
+	var garage := _button("GARAGE")
+	garage.custom_minimum_size = Vector2(150, 58)
 	garage.pressed.connect(func(): _show_info("GARAGE", "Team cars and the vehicle showcase are being built."))
 	actions.add_child(garage)
 
-	var stats := HBoxContainer.new()
-	stats.anchor_left = 0.065
-	stats.anchor_right = 0.55
-	stats.anchor_top = 0.83
-	stats.anchor_bottom = 0.94
-	stats.add_theme_constant_override("separation", 42)
-	page_root.add_child(stats)
-	for pair in [["11","TEAMS"],["22","DRIVERS"],["12","CIRCUITS"]]:
-		var stat := VBoxContainer.new()
-		stat.add_child(_label(pair[0], 25, WHITE, true))
-		stat.add_child(_label(pair[1], 10, MUTED, true))
-		stats.add_child(stat)
+	var art_panel := PanelContainer.new()
+	art_panel.anchor_left = 0.615
+	art_panel.anchor_right = 0.925
+	art_panel.anchor_top = 0.19
+	art_panel.anchor_bottom = 0.815
+	_style_panel(art_panel, Color("#0c121a"), Color("#283544"))
+	page_root.add_child(art_panel)
+	var art := HeroCarArt.new()
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art_panel.add_child(art)
+	var art_tag := _label("ELDEN 1  /  RACE SPEC", 10, MUTED, true)
+	art_tag.anchor_left = 0.65
+	art_tag.anchor_right = 0.90
+	art_tag.anchor_top = 0.22
+	art_tag.anchor_bottom = 0.26
+	art_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	page_root.add_child(art_tag)
+	var art_number := _label("01", 74, Color("#26313e"), true)
+	art_number.anchor_left = 0.80
+	art_number.anchor_right = 0.91
+	art_number.anchor_top = 0.67
+	art_number.anchor_bottom = 0.79
+	art_number.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	page_root.add_child(art_number)
 
-	var feature := PanelContainer.new()
-	feature.anchor_left = 0.60
-	feature.anchor_right = 0.94
-	feature.anchor_top = 0.20
-	feature.anchor_bottom = 0.83
-	_style_panel(feature, PANEL)
-	page_root.add_child(feature)
-	var feature_box := VBoxContainer.new()
-	feature_box.add_theme_constant_override("separation", 12)
-	feature_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	feature_box.add_theme_constant_override("margin_left", 26)
-	feature_box.add_theme_constant_override("margin_right", 26)
-	feature_box.add_theme_constant_override("margin_top", 22)
-	feature_box.add_theme_constant_override("margin_bottom", 22)
-	feature.add_child(feature_box)
-	feature_box.add_child(_label("FEATURED ROUND  /  01", 11, RED, true))
-	feature_box.add_child(_label("BAHRAIN GRAND PRIX", 22, WHITE, true))
-	var map_frame := PanelContainer.new()
-	map_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_style_panel(map_frame, Color("#0b1118"), Color("#202b37"))
-	feature_box.add_child(map_frame)
-	var map := TrackMap.new()
-	map.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	map.points = _track_preview("BAHRAIN")
-	map_frame.add_child(map)
-	feature_box.add_child(_label("SAKHIR  /  BAHRAIN", 11, MUTED, true))
-	var feature_bottom := HBoxContainer.new()
-	feature_box.add_child(feature_bottom)
-	feature_bottom.add_child(_label("RACE WEEKEND", 11, WHITE, true))
-	var fill := Control.new()
-	fill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	feature_bottom.add_child(fill)
-	feature_bottom.add_child(_label("LIGHTS OUT  •  2026", 10, RED, true))
+	var event_card := PanelContainer.new()
+	event_card.anchor_left = 0.075
+	event_card.anchor_right = 0.925
+	event_card.anchor_top = 0.865
+	event_card.anchor_bottom = 0.955
+	_style_panel(event_card, Color("#111923"), Color("#26313e"))
+	page_root.add_child(event_card)
+	var event_row := HBoxContainer.new()
+	event_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	event_row.add_theme_constant_override("separation", 22)
+	event_card.add_child(event_row)
+	var round_box := VBoxContainer.new()
+	round_box.custom_minimum_size = Vector2(190, 0)
+	round_box.add_child(_label("NEXT EVENT", 9, RED, true))
+	round_box.add_child(_label("BAHRAIN GRAND PRIX", 15, WHITE, true))
+	event_row.add_child(round_box)
+	var event_map := TrackMap.new()
+	event_map.custom_minimum_size = Vector2(160, 0)
+	event_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	event_map.points = _track_preview("BAHRAIN")
+	event_row.add_child(event_map)
+	var circuit_info := VBoxContainer.new()
+	circuit_info.custom_minimum_size = Vector2(190, 0)
+	circuit_info.add_child(_label("SAKHIR  /  BAHRAIN", 11, WHITE, true))
+	circuit_info.add_child(_label("ROUND 01     ·     2026", 9, MUTED, true))
+	event_row.add_child(circuit_info)
+	var stats := VBoxContainer.new()
+	stats.custom_minimum_size = Vector2(120, 0)
+	stats.add_child(_label("11 TEAMS", 11, WHITE, true))
+	stats.add_child(_label("12 CIRCUITS", 9, MUTED, true))
+	event_row.add_child(stats)
 
-	var footer := _label("ELDEN 1  /  PRE-RELEASE BUILD", 10, MUTED, true)
+	var footer := _label("PRE-RELEASE  /  WINDOWS", 9, MUTED, true)
 	footer.anchor_left = 0.72
-	footer.anchor_right = 0.94
-	footer.anchor_top = 0.955
+	footer.anchor_right = 0.925
+	footer.anchor_top = 0.965
 	footer.anchor_bottom = 0.99
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	page_root.add_child(footer)
