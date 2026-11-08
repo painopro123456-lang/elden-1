@@ -31,15 +31,20 @@ jobs:
         shell: pwsh
         run: godot --headless --editor --path . --quit
 
-      - name: Smoke-test main scene
+      - name: Smoke-test main menu
         shell: pwsh
         run: godot --headless --path . --quit-after 3
+
+      - name: Smoke-test selected 3D race scene
+        shell: pwsh
+        run: godot --headless --path . --quit-after 3 res://scenes/race.tscn
 
       - name: Export Windows executable
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path build | Out-Null
-          godot --headless --path . --export-release "Windows Desktop" "build/ELDEN 1.exe"
+          godot --headless --verbose --path . --export-release "Windows Desktop" "build/ELDEN 1.exe"
+          Get-ChildItem -Recurse build | Format-Table FullName,Length
 
       - name: Verify executable exists
         shell: pwsh
