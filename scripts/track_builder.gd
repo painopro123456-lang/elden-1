@@ -186,54 +186,6 @@ func _add_road() -> void:
 	# The drivable surface sits just above the broad ground collider. Keeping
 	# collision simple makes loading large GPS circuits reliable on Windows.
 
-func _add_curbs() -> void:
-	for side_sign in [-1.0, 1.0]:
-		for i in range(0, centerline.size(), 5):
-			var j := (i + 1) % centerline.size()
-			var tangent := (centerline[j] - centerline[i]).normalized()
-			var side := Vector3(-tangent.z, 0.0, tangent.x) * side_sign
-			var width := left_widths[i] if side_sign < 0.0 else right_widths[i]
-			var curb := MeshInstance3D.new()
-			var box := BoxMesh.new()
-			box.size = Vector3(2.2, 0.16, 1.1)
-			curb.mesh = box
-			curb.position = (centerline[i] + centerline[j]) * 0.5 + side * (width + 0.45)
-			curb.rotation.y = atan2(-tangent.z, tangent.x)
-			var mat := StandardMaterial3D.new()
-			mat.albedo_color = Color("#e1262f") if (i / 5) % 2 == 0 else Color("#f0f0ed")
-			curb.material_override = mat
-			add_child(curb)
-
-func _add_barriers() -> void:
-	for side_sign in [-1.0, 1.0]:
-		for i in range(0, centerline.size(), 12):
-			var j := (i + 1) % centerline.size()
-			var tangent := (centerline[j] - centerline[i]).normalized()
-			var side := Vector3(-tangent.z, 0.0, tangent.x) * side_sign
-			var width := left_widths[i] if side_sign < 0.0 else right_widths[i]
-			var midpoint := (centerline[i] + centerline[j]) * 0.5 + side * (width + 5.0)
-			var barrier := MeshInstance3D.new()
-			var box := BoxMesh.new()
-			box.size = Vector3(5.0, 1.0, 0.55)
-			barrier.mesh = box
-			barrier.position = midpoint + Vector3.UP * 0.55
-			barrier.rotation.y = atan2(-tangent.z, tangent.x)
-			var metal := StandardMaterial3D.new()
-			metal.albedo_color = Color("#aeb5bd")
-			metal.metallic = 0.55
-			metal.roughness = 0.48
-			barrier.material_override = metal
-			add_child(barrier)
-			var body := StaticBody3D.new()
-			body.position = barrier.position
-			body.rotation = barrier.rotation
-			var shape := CollisionShape3D.new()
-			var box_shape := BoxShape3D.new()
-			box_shape.size = box.size
-			shape.shape = box_shape
-			body.add_child(shape)
-			add_child(body)
-
 func _add_start_line() -> void:
 	var line := MeshInstance3D.new()
 	var mesh := BoxMesh.new()
