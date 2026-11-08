@@ -1,23 +1,20 @@
 extends Node3D
 
-const TRACK_SCRIPT := preload("res://scripts/track_builder.gd")
-const CAR_SCRIPT := preload("res://scripts/race_car.gd")
-
 var selected_track := "BAHRAIN"
 var speed_label: Label
 var track_label: Label
-var car: CharacterBody3D
+var car: RaceCar
 
 func _ready() -> void:
 	selected_track = str(get_tree().root.get_meta("selected_track", "BAHRAIN"))
 	_build_race()
 
 func _build_race() -> void:
-	var track := TRACK_SCRIPT.new()
+	var track := TrackBuilder.new()
 	track.name = "Circuit"
 	add_child(track)
 	track.build(selected_track)
-	car = CAR_SCRIPT.new()
+	car = RaceCar.new()
 	car.name = "PlayerCar"
 	add_child(car)
 	car.global_position = track.get_start_position() + Vector3(0, 0.4, 0)
