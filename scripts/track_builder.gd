@@ -128,7 +128,7 @@ func _add_curbs() -> void:
 			box.size = Vector3(1.8, 0.16, 1.2)
 			curb.mesh = box
 			curb.position = (centerline[i] + centerline[j]) * 0.5 + side * (ROAD_WIDTH * 0.5 + 0.35)
-			curb.rotation.y = atan2(tangent.x, tangent.z)
+			curb.rotation.y = atan2(-tangent.z, tangent.x)
 			var mat := StandardMaterial3D.new()
 			mat.albedo_color = Color("#e1262f") if (i / 4) % 2 == 0 else Color("#f0f0ed")
 			curb.material_override = mat
@@ -146,7 +146,7 @@ func _add_barriers() -> void:
 			box.size = Vector3(2.8, 1.0, 0.55)
 			barrier.mesh = box
 			barrier.position = midpoint + Vector3.UP * 0.55
-			barrier.rotation.y = atan2(tangent.x, tangent.z)
+			barrier.rotation.y = atan2(-tangent.z, tangent.x)
 			var metal := StandardMaterial3D.new()
 			metal.albedo_color = Color("#aeb5bd")
 			metal.metallic = 0.55
@@ -169,6 +169,8 @@ func _add_start_line() -> void:
 	mesh.size = Vector3(ROAD_WIDTH, 0.025, 0.7)
 	line.mesh = mesh
 	line.position = centerline[0] + Vector3(0, 0.09, 0)
+	var tangent := (centerline[1] - centerline[0]).normalized()
+	line.rotation.y = atan2(tangent.x, tangent.z)
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color.WHITE
 	line.material_override = material
