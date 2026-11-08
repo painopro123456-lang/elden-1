@@ -294,7 +294,7 @@ func _track_preview(track_name: String) -> PackedVector2Array:
 	if path.is_empty() or not FileAccess.file_exists(path):
 		return PackedVector2Array()
 	var points := PackedVector2Array()
-	if path.ends_with(".csv"):
+	if path.ends_with(".txt"):
 		var file := FileAccess.open(path, FileAccess.READ)
 		if file == null:
 			return points
