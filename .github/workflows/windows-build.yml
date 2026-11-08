@@ -43,6 +43,8 @@ jobs:
           $p = Start-Process -FilePath $godot -ArgumentList '--headless --editor --path . --quit' -Wait -PassThru -RedirectStandardOutput "$env:TEMP\godot-import.out" -RedirectStandardError "$env:TEMP\godot-import.err"
           Get-Content "$env:TEMP\godot-import.out" -ErrorAction SilentlyContinue
           Get-Content "$env:TEMP\godot-import.err" -ErrorAction SilentlyContinue
+          $logText = (Get-Content "$env:TEMP\godot-import.out" -Raw -ErrorAction SilentlyContinue) + (Get-Content "$env:TEMP\godot-import.err" -Raw -ErrorAction SilentlyContinue)
+          if ($logText -match 'SCRIPT ERROR:|Parse Error:|Failed to load script|Invalid call\.') { throw "Godot reported a script error. Inspect $env:TEMP\godot-import.out and $env:TEMP\godot-import.err." }
           if ($p.ExitCode -ne 0) { throw "Godot project import failed: $($p.ExitCode)" }
 
       - name: Smoke-test main menu
@@ -52,6 +54,8 @@ jobs:
           $p = Start-Process -FilePath $godot -ArgumentList '--headless --path . --quit-after 3' -Wait -PassThru -RedirectStandardOutput "$env:TEMP\godot-menu.out" -RedirectStandardError "$env:TEMP\godot-menu.err"
           Get-Content "$env:TEMP\godot-menu.out" -ErrorAction SilentlyContinue
           Get-Content "$env:TEMP\godot-menu.err" -ErrorAction SilentlyContinue
+          $logText = (Get-Content "$env:TEMP\godot-menu.out" -Raw -ErrorAction SilentlyContinue) + (Get-Content "$env:TEMP\godot-menu.err" -Raw -ErrorAction SilentlyContinue)
+          if ($logText -match 'SCRIPT ERROR:|Parse Error:|Failed to load script|Invalid call\.') { throw "Godot reported a script error. Inspect $env:TEMP\godot-menu.out and $env:TEMP\godot-menu.err." }
           if ($p.ExitCode -ne 0) { throw "Main menu smoke-test failed: $($p.ExitCode)" }
 
       - name: Smoke-test selected 3D race scene
@@ -61,6 +65,8 @@ jobs:
           $p = Start-Process -FilePath $godot -ArgumentList '--headless --path . --quit-after 3 res://scenes/race.tscn' -Wait -PassThru -RedirectStandardOutput "$env:TEMP\godot-race.out" -RedirectStandardError "$env:TEMP\godot-race.err"
           Get-Content "$env:TEMP\godot-race.out" -ErrorAction SilentlyContinue
           Get-Content "$env:TEMP\godot-race.err" -ErrorAction SilentlyContinue
+          $logText = (Get-Content "$env:TEMP\godot-race.out" -Raw -ErrorAction SilentlyContinue) + (Get-Content "$env:TEMP\godot-race.err" -Raw -ErrorAction SilentlyContinue)
+          if ($logText -match 'SCRIPT ERROR:|Parse Error:|Failed to load script|Invalid call\.') { throw "Godot reported a script error. Inspect $env:TEMP\godot-race.out and $env:TEMP\godot-race.err." }
           if ($p.ExitCode -ne 0) { throw "Race scene smoke-test failed: $($p.ExitCode)" }
 
       - name: Export Windows executable
@@ -71,6 +77,8 @@ jobs:
           $p = Start-Process -FilePath $godot -ArgumentList '--headless --verbose --path . --export-release "Windows Desktop" "build/ELDEN1.exe"' -Wait -PassThru -RedirectStandardOutput "$env:TEMP\godot-export.out" -RedirectStandardError "$env:TEMP\godot-export.err"
           Get-Content "$env:TEMP\godot-export.out" -ErrorAction SilentlyContinue
           Get-Content "$env:TEMP\godot-export.err" -ErrorAction SilentlyContinue
+          $logText = (Get-Content "$env:TEMP\godot-export.out" -Raw -ErrorAction SilentlyContinue) + (Get-Content "$env:TEMP\godot-export.err" -Raw -ErrorAction SilentlyContinue)
+          if ($logText -match 'SCRIPT ERROR:|Parse Error:|Failed to load script|Invalid call\.') { throw "Godot reported a script error. Inspect $env:TEMP\godot-export.out and $env:TEMP\godot-export.err." }
           if ($p.ExitCode -ne 0) { throw "Godot export command failed: $($p.ExitCode)" }
           Get-ChildItem -Recurse build | Format-Table FullName,Length
 
