@@ -7,18 +7,18 @@ var left_widths: PackedFloat32Array = PackedFloat32Array()
 var right_widths: PackedFloat32Array = PackedFloat32Array()
 
 const TRACK_FILES := {
-	"BAHRAIN": "res://data/tracks/Sakhir.csv",
+	"BAHRAIN": "res://data/tracks/Sakhir.txt",
 	"JEDDAH": "res://data/tracks/Jeddah.geojson",
-	"MELBOURNE": "res://data/tracks/Melbourne.csv",
-	"SUZUKA": "res://data/tracks/Suzuka.csv",
+	"MELBOURNE": "res://data/tracks/Melbourne.txt",
+	"SUZUKA": "res://data/tracks/Suzuka.txt",
 	"MONACO": "res://data/tracks/Monaco.geojson",
-	"SILVERSTONE": "res://data/tracks/Silverstone.csv",
-	"SPA-FRANCORCHAMPS": "res://data/tracks/Spa.csv",
-	"MONZA": "res://data/tracks/Monza.csv",
+	"SILVERSTONE": "res://data/tracks/Silverstone.txt",
+	"SPA-FRANCORCHAMPS": "res://data/tracks/Spa.txt",
+	"MONZA": "res://data/tracks/Monza.txt",
 	"SINGAPORE": "res://data/tracks/Singapore.geojson",
-	"AUSTIN": "res://data/tracks/Austin.csv",
-	"MEXICO CITY": "res://data/tracks/MexicoCity.csv",
-	"ABU DHABI": "res://data/tracks/YasMarina.csv"
+	"AUSTIN": "res://data/tracks/Austin.txt",
+	"MEXICO CITY": "res://data/tracks/MexicoCity.txt",
+	"ABU DHABI": "res://data/tracks/YasMarina.txt"
 }
 
 func build(track_name: String) -> bool:
@@ -27,7 +27,7 @@ func build(track_name: String) -> bool:
 	right_widths.clear()
 	var path: String = TRACK_FILES.get(track_name, TRACK_FILES["BAHRAIN"])
 	var loaded := false
-	if path.ends_with(".csv"):
+	if path.ends_with(".txt"):
 		loaded = _load_csv(path)
 	else:
 		loaded = _load_geojson(path)
