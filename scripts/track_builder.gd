@@ -1,60 +1,121 @@
 extends Node3D
 class_name TrackBuilder
 
-const ROAD_WIDTH := 15.0
-const SAMPLE_STEP := 0.035
-const TRACKS := {
-	"BAHRAIN": [Vector2(-42,-28),Vector2(-20,-42),Vector2(8,-40),Vector2(35,-28),Vector2(44,-7),Vector2(32,12),Vector2(8,18),Vector2(-5,8),Vector2(-24,20),Vector2(-44,10),Vector2(-48,-8)],
-	"JEDDAH": [Vector2(-48,-12),Vector2(-28,-34),Vector2(-4,-28),Vector2(16,-42),Vector2(43,-30),Vector2(48,-8),Vector2(25,2),Vector2(43,20),Vector2(20,38),Vector2(-8,30),Vector2(-35,38),Vector2(-48,14)],
-	"MELBOURNE": [Vector2(-42,-24),Vector2(-18,-38),Vector2(12,-36),Vector2(42,-20),Vector2(46,4),Vector2(28,24),Vector2(2,32),Vector2(-22,25),Vector2(-44,8),Vector2(-32,-4),Vector2(-10,4),Vector2(5,-8)],
-	"SUZUKA": [Vector2(-48,-20),Vector2(-30,-38),Vector2(-10,-35),Vector2(4,-18),Vector2(20,-38),Vector2(43,-26),Vector2(48,-2),Vector2(28,8),Vector2(42,28),Vector2(20,40),Vector2(0,26),Vector2(-24,35),Vector2(-44,18)],
-	"MONACO": [Vector2(-40,-25),Vector2(-15,-38),Vector2(10,-35),Vector2(36,-22),Vector2(44,-2),Vector2(28,8),Vector2(42,24),Vector2(20,36),Vector2(-4,30),Vector2(-22,15),Vector2(-44,20),Vector2(-48,-4)],
-	"SILVERSTONE": [Vector2(-45,-20),Vector2(-28,-38),Vector2(0,-40),Vector2(30,-30),Vector2(46,-10),Vector2(38,12),Vector2(18,22),Vector2(38,35),Vector2(12,40),Vector2(-12,30),Vector2(-35,38),Vector2(-48,12)],
-	"SPA-FRANCORCHAMPS": [Vector2(-45,-30),Vector2(-18,-42),Vector2(8,-35),Vector2(28,-42),Vector2(45,-18),Vector2(32,0),Vector2(45,20),Vector2(25,40),Vector2(-2,35),Vector2(-24,18),Vector2(-44,24),Vector2(-48,-4)],
-	"MONZA": [Vector2(-42,-30),Vector2(-12,-38),Vector2(24,-35),Vector2(44,-20),Vector2(45,0),Vector2(25,8),Vector2(42,25),Vector2(20,35),Vector2(-12,32),Vector2(-44,18),Vector2(-46,-2)],
-	"SINGAPORE": [Vector2(-44,-28),Vector2(-20,-38),Vector2(5,-35),Vector2(34,-28),Vector2(46,-8),Vector2(30,4),Vector2(44,22),Vector2(20,35),Vector2(-5,28),Vector2(-30,38),Vector2(-46,14),Vector2(-30,-2)],
-	"AUSTIN": [Vector2(-45,-28),Vector2(-25,-40),Vector2(-5,-30),Vector2(8,-42),Vector2(35,-32),Vector2(46,-8),Vector2(32,8),Vector2(44,28),Vector2(18,38),Vector2(-8,25),Vector2(-30,35),Vector2(-46,10)],
-	"MEXICO CITY": [Vector2(-44,-24),Vector2(-18,-40),Vector2(12,-38),Vector2(42,-20),Vector2(45,2),Vector2(25,16),Vector2(42,30),Vector2(14,38),Vector2(-12,28),Vector2(-38,35),Vector2(-46,8)],
-	"ABU DHABI": [Vector2(-44,-24),Vector2(-18,-38),Vector2(12,-35),Vector2(42,-18),Vector2(46,4),Vector2(26,12),Vector2(42,32),Vector2(15,38),Vector2(-10,28),Vector2(-38,36),Vector2(-48,10)]
+const DEFAULT_HALF_WIDTH := 7.0
+var centerline := PackedVector3Array()
+var left_widths: PackedFloat32Array = PackedFloat32Array()
+var right_widths: PackedFloat32Array = PackedFloat32Array()
+
+const TRACK_FILES := {
+	"BAHRAIN": "res://data/tracks/Sakhir.csv",
+	"JEDDAH": "res://data/tracks/Jeddah.geojson",
+	"MELBOURNE": "res://data/tracks/Melbourne.csv",
+	"SUZUKA": "res://data/tracks/Suzuka.csv",
+	"MONACO": "res://data/tracks/Monaco.geojson",
+	"SILVERSTONE": "res://data/tracks/Silverstone.csv",
+	"SPA-FRANCORCHAMPS": "res://data/tracks/Spa.csv",
+	"MONZA": "res://data/tracks/Monza.csv",
+	"SINGAPORE": "res://data/tracks/Singapore.geojson",
+	"AUSTIN": "res://data/tracks/Austin.csv",
+	"MEXICO CITY": "res://data/tracks/MexicoCity.csv",
+	"ABU DHABI": "res://data/tracks/YasMarina.csv"
 }
 
-var centerline: PackedVector3Array
-
 func build(track_name: String) -> void:
-	var points: Array = TRACKS.get(track_name, TRACKS["BAHRAIN"])
-	centerline = _smooth_loop(points, 10)
+	var path: String = TRACK_FILES.get(track_name, TRACK_FILES["BAHRAIN"])
+	var loaded := false
+	if path.ends_with(".csv"):
+		loaded = _load_csv(path)
+	else:
+		loaded = _load_geojson(path)
+	if not loaded or centerline.size() < 20:
+		push_error("Could not load real circuit geometry: " + track_name)
+		return
 	_add_environment()
 	_add_road()
 	_add_curbs()
 	_add_barriers()
 	_add_start_line()
 
-func _smooth_loop(points: Array, subdivisions: int) -> PackedVector3Array:
-	var result := PackedVector3Array()
-	for i in range(points.size()):
-		var p0: Vector2 = points[(i - 1 + points.size()) % points.size()]
-		var p1: Vector2 = points[i]
-		var p2: Vector2 = points[(i + 1) % points.size()]
-		var p3: Vector2 = points[(i + 2) % points.size()]
-		for step in range(subdivisions):
-			var t := float(step) / float(subdivisions)
-			var t2 := t * t
-			var t3 := t2 * t
-			var x := 0.5 * ((2.0*p1.x) + (-p0.x+p2.x)*t + (2.0*p0.x-5.0*p1.x+4.0*p2.x-p3.x)*t2 + (-p0.x+3.0*p1.x-3.0*p2.x+p3.x)*t3)
-			var z := 0.5 * ((2.0*p1.y) + (-p0.y+p2.y)*t + (2.0*p0.y-5.0*p1.y+4.0*p2.y-p3.y)*t2 + (-p0.y+3.0*p1.y-3.0*p2.y+p3.y)*t3)
-			result.append(Vector3(x, 0.05, z))
-	return result
+func _load_csv(path: String) -> bool:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return false
+	while not file.eof_reached():
+		var line := file.get_line().strip_edges()
+		if line.is_empty() or line.begins_with("#"):
+			continue
+		var fields := line.split(",")
+		if fields.size() < 4:
+			continue
+		if not fields[0].is_valid_float():
+			continue
+		var x := float(fields[0])
+		var z := float(fields[1])
+		centerline.append(Vector3(x, 0.05, z))
+		right_widths.append(maxf(2.5, float(fields[2])))
+		left_widths.append(maxf(2.5, float(fields[3])))
+	file.close()
+	return centerline.size() > 20
+
+func _load_geojson(path: String) -> bool:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return false
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		return false
+	var features: Array = parsed.get("features", [])
+	if features.is_empty():
+		return false
+	var geometry: Dictionary = features[0].get("geometry", {})
+	var coordinates: Array = geometry.get("coordinates", [])
+	if coordinates.size() < 20:
+		return false
+	var origin_lon := float(coordinates[0][0])
+	var origin_lat := float(coordinates[0][1])
+	var lat_scale := cos(deg_to_rad(origin_lat)) * 111320.0
+	for coordinate in coordinates:
+		var lon := float(coordinate[0])
+		var lat := float(coordinate[1])
+		var x := (lon - origin_lon) * lat_scale
+		var z := -(lat - origin_lat) * 111320.0
+		centerline.append(Vector3(x, 0.05, z))
+		left_widths.append(DEFAULT_HALF_WIDTH)
+		right_widths.append(DEFAULT_HALF_WIDTH)
+	# GeoJSON rings often repeat their first point at the end; avoid a zero-length closing segment.
+	if centerline.size() > 2 and centerline[0].distance_to(centerline[-1]) < 0.2:
+		centerline.remove_at(centerline.size() - 1)
+		left_widths.remove_at(left_widths.size() - 1)
+		right_widths.remove_at(right_widths.size() - 1)
+	return centerline.size() > 20
+
+func _side_at(index: int) -> Vector3:
+	var tangent := (centerline[(index + 1) % centerline.size()] - centerline[(index - 1 + centerline.size()) % centerline.size()]).normalized()
+	return Vector3(-tangent.z, 0.0, tangent.x)
 
 func _add_environment() -> void:
+	var min_x := INF
+	var max_x := -INF
+	var min_z := INF
+	var max_z := -INF
+	for point in centerline:
+		min_x = minf(min_x, point.x)
+		max_x = maxf(max_x, point.x)
+		min_z = minf(min_z, point.z)
+		max_z = maxf(max_z, point.z)
+	var span_x := max_x - min_x
+	var span_z := max_z - min_z
 	var ground := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
-	plane.size = Vector2(260, 260)
+	plane.size = Vector2(span_x + 320.0, span_z + 320.0)
 	ground.mesh = plane
 	var grass := StandardMaterial3D.new()
 	grass.albedo_color = Color("#26382e")
 	grass.roughness = 1.0
 	ground.material_override = grass
-	ground.position.y = -0.22
+	ground.position = Vector3((min_x + max_x) * 0.5, -0.22, (min_z + max_z) * 0.5)
 	add_child(ground)
 	var world := WorldEnvironment.new()
 	var env := Environment.new()
@@ -82,17 +143,18 @@ func _add_road() -> void:
 	var uvs := PackedVector2Array()
 	var indices := PackedInt32Array()
 	for i in range(centerline.size()):
-		var tangent := (centerline[(i + 1) % centerline.size()] - centerline[(i - 1 + centerline.size()) % centerline.size()]).normalized()
-		var side := Vector3(-tangent.z, 0, tangent.x)
-		vertices.append(centerline[i] - side * ROAD_WIDTH * 0.5)
-		vertices.append(centerline[i] + side * ROAD_WIDTH * 0.5)
-		uvs.append(Vector2(0, float(i) * 0.12))
-		uvs.append(Vector2(1, float(i) * 0.12))
+		var side := _side_at(i)
+		var left_edge := centerline[i] - side * left_widths[i]
+		var right_edge := centerline[i] + side * right_widths[i]
+		vertices.append(left_edge)
+		vertices.append(right_edge)
+		uvs.append(Vector2(0.0, float(i) * 0.12))
+		uvs.append(Vector2(1.0, float(i) * 0.12))
 	for i in range(centerline.size()):
 		var j := (i + 1) % centerline.size()
 		var a := i * 2
 		var b := j * 2
-		indices.append_array(PackedInt32Array([a, b, a+1, a+1, b, b+1]))
+		indices.append_array(PackedInt32Array([a, b, a + 1, a + 1, b, b + 1]))
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
@@ -105,7 +167,6 @@ func _add_road() -> void:
 	var asphalt := StandardMaterial3D.new()
 	asphalt.albedo_color = Color("#30343a")
 	asphalt.roughness = 0.92
-	asphalt.uv1_scale = Vector3(1, 1, 1)
 	road.material_override = asphalt
 	add_child(road)
 	var body := StaticBody3D.new()
@@ -119,31 +180,33 @@ func _add_road() -> void:
 
 func _add_curbs() -> void:
 	for side_sign in [-1.0, 1.0]:
-		for i in range(0, centerline.size(), 4):
+		for i in range(0, centerline.size(), 5):
 			var j := (i + 1) % centerline.size()
 			var tangent := (centerline[j] - centerline[i]).normalized()
-			var side := Vector3(-tangent.z, 0, tangent.x) * side_sign
+			var side := Vector3(-tangent.z, 0.0, tangent.x) * side_sign
+			var width := left_widths[i] if side_sign < 0.0 else right_widths[i]
 			var curb := MeshInstance3D.new()
 			var box := BoxMesh.new()
-			box.size = Vector3(1.8, 0.16, 1.2)
+			box.size = Vector3(2.2, 0.16, 1.1)
 			curb.mesh = box
-			curb.position = (centerline[i] + centerline[j]) * 0.5 + side * (ROAD_WIDTH * 0.5 + 0.35)
+			curb.position = (centerline[i] + centerline[j]) * 0.5 + side * (width + 0.45)
 			curb.rotation.y = atan2(-tangent.z, tangent.x)
 			var mat := StandardMaterial3D.new()
-			mat.albedo_color = Color("#e1262f") if (i / 4) % 2 == 0 else Color("#f0f0ed")
+			mat.albedo_color = Color("#e1262f") if (i / 5) % 2 == 0 else Color("#f0f0ed")
 			curb.material_override = mat
 			add_child(curb)
 
 func _add_barriers() -> void:
 	for side_sign in [-1.0, 1.0]:
-		for i in range(0, centerline.size(), 3):
+		for i in range(0, centerline.size(), 12):
 			var j := (i + 1) % centerline.size()
 			var tangent := (centerline[j] - centerline[i]).normalized()
-			var side := Vector3(-tangent.z, 0, tangent.x) * side_sign
-			var midpoint := (centerline[i] + centerline[j]) * 0.5 + side * (ROAD_WIDTH * 0.5 + 4.2)
+			var side := Vector3(-tangent.z, 0.0, tangent.x) * side_sign
+			var width := left_widths[i] if side_sign < 0.0 else right_widths[i]
+			var midpoint := (centerline[i] + centerline[j]) * 0.5 + side * (width + 5.0)
 			var barrier := MeshInstance3D.new()
 			var box := BoxMesh.new()
-			box.size = Vector3(2.8, 1.0, 0.55)
+			box.size = Vector3(5.0, 1.0, 0.55)
 			barrier.mesh = box
 			barrier.position = midpoint + Vector3.UP * 0.55
 			barrier.rotation.y = atan2(-tangent.z, tangent.x)
@@ -166,7 +229,7 @@ func _add_barriers() -> void:
 func _add_start_line() -> void:
 	var line := MeshInstance3D.new()
 	var mesh := BoxMesh.new()
-	mesh.size = Vector3(ROAD_WIDTH, 0.025, 0.7)
+	mesh.size = Vector3(left_widths[0] + right_widths[0], 0.025, 0.7)
 	line.mesh = mesh
 	line.position = centerline[0] + Vector3(0, 0.09, 0)
 	var tangent := (centerline[1] - centerline[0]).normalized()
