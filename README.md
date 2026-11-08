@@ -12,10 +12,12 @@ Godot 4.3, using Forward+ rendering for desktop. The project targets Windows 10/
 
 ## Current implementation
 - Premium main-menu foundation and Grand Prix circuit picker.
-- Twelve distinct procedural 3D circuit layouts: Bahrain, Jeddah, Melbourne, Suzuka, Monaco, Silverstone, Spa, Monza, Singapore, Austin, Mexico City, and Abu Dhabi.
-- Road mesh, collision surface, kerbs, trackside barriers, start/finish line, grass environment, lighting, and sky are generated for the selected circuit.
+- Twelve circuit selections now load mapped circuit centre-line data rather than the earlier hand-drawn placeholder loops.
+- Nine circuits use GPS-derived centre-lines and estimated left/right widths from the TUMFTM racetrack database: Bahrain, Melbourne, Suzuka, Silverstone, Spa, Monza, Austin, Mexico City, and Abu Dhabi.
+- Jeddah, Monaco, and Singapore use mapped GeoJSON circuit paths; the game currently applies a default road width to these three.
+- Road meshes and collision surfaces are generated from the source geometry, with kerbs, barriers, start/finish line, grass environment, lighting, and sky.
 - A basic keyboard-driven test car, T-cam camera, and speed readout are connected to the race scene.
-- The current circuits are original approximations inspired by each venue's general layout, not exact surveyed recreations or licensed circuit scans.
+- These are real mapped circuit paths, but not laser-scanned production tracks. Elevation, pit lanes, detailed runoff, venue buildings, grandstands, and exact modern configuration checks are still outstanding. See [track data sources and licenses](data/tracks/SOURCES.md).
 - The test car is temporary geometry. The supplied Ferrari SF-26 model has not yet been integrated.
 - AI opponents, race weekend rules, tyre simulation, damage, pit lane, and finished production-quality trackside scenery are not implemented yet.
 
