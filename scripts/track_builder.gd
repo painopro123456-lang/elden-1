@@ -21,7 +21,10 @@ const TRACK_FILES := {
 	"ABU DHABI": "res://data/tracks/YasMarina.csv"
 }
 
-func build(track_name: String) -> void:
+func build(track_name: String) -> bool:
+	centerline.clear()
+	left_widths.clear()
+	right_widths.clear()
 	var path: String = TRACK_FILES.get(track_name, TRACK_FILES["BAHRAIN"])
 	var loaded := false
 	if path.ends_with(".csv"):
@@ -30,12 +33,11 @@ func build(track_name: String) -> void:
 		loaded = _load_geojson(path)
 	if not loaded or centerline.size() < 20:
 		push_error("Could not load real circuit geometry: " + track_name)
-		return
+		return false
 	_add_environment()
 	_add_road()
-	_add_curbs()
-	_add_barriers()
 	_add_start_line()
+	return true
 
 func _load_csv(path: String) -> bool:
 	var file := FileAccess.open(path, FileAccess.READ)
@@ -107,9 +109,10 @@ func _add_environment() -> void:
 		max_z = maxf(max_z, point.z)
 	var span_x := max_x - min_x
 	var span_z := max_z - min_z
+	var ground_size := Vector2(maxf(span_x + 320.0, 400.0), maxf(span_z + 320.0, 400.0))
 	var ground := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
-	plane.size = Vector2(span_x + 320.0, span_z + 320.0)
+	plane.size = ground_size
 	ground.mesh = plane
 	var grass := StandardMaterial3D.new()
 	grass.albedo_color = Color("#26382e")
@@ -117,6 +120,17 @@ func _add_environment() -> void:
 	ground.material_override = grass
 	ground.position = Vector3((min_x + max_x) * 0.5, -0.22, (min_z + max_z) * 0.5)
 	add_child(ground)
+	# A single broad floor collider avoids hundreds of tiny barrier bodies and
+	# an expensive concave collision mesh during scene startup.
+	var floor_body := StaticBody3D.new()
+	floor_body.name = "GroundCollision"
+	floor_body.position = Vector3(ground.position.x, -0.20, ground.position.z)
+	var floor_shape := CollisionShape3D.new()
+	var floor_box := BoxShape3D.new()
+	floor_box.size = Vector3(ground_size.x, 0.5, ground_size.y)
+	floor_shape.shape = floor_box
+	floor_body.add_child(floor_shape)
+	add_child(floor_body)
 	var world := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
@@ -169,14 +183,8 @@ func _add_road() -> void:
 	asphalt.roughness = 0.92
 	road.material_override = asphalt
 	add_child(road)
-	var body := StaticBody3D.new()
-	body.name = "RoadCollision"
-	add_child(body)
-	var collision := CollisionShape3D.new()
-	var shape := ConcavePolygonShape3D.new()
-	shape.set_faces(mesh.get_faces())
-	collision.shape = shape
-	body.add_child(collision)
+	# The drivable surface sits just above the broad ground collider. Keeping
+	# collision simple makes loading large GPS circuits reliable on Windows.
 
 func _add_curbs() -> void:
 	for side_sign in [-1.0, 1.0]:
