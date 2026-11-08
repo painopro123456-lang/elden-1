@@ -168,7 +168,7 @@ func _add_road() -> void:
 		var j := (i + 1) % centerline.size()
 		var a := i * 2
 		var b := j * 2
-		indices.append_array(PackedInt32Array([a, b, a + 1, a + 1, b, b + 1]))
+		indices.append_array(PackedInt32Array([a, a + 1, b, a + 1, b + 1, b]))
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
