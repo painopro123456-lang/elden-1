@@ -23,27 +23,45 @@ jobs:
           use-dotnet: false
           include-templates: true
 
-      - name: Verify Godot installation
+      - name: Verify Godot console installation
         shell: pwsh
-        run: godot --version
+        run: |
+          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64_console.exe"
+          if (!(Test-Path $godot)) {
+            Get-ChildItem (Join-Path $env:USERPROFILE "godot") | Format-Table Name,Length
+            throw "Godot console executable is missing."
+          }
+          & $godot --version
+          if ($LASTEXITCODE -ne 0) { throw "Godot version check failed." }
 
       - name: Import project and check scripts
         shell: pwsh
-        run: godot --headless --editor --path . --quit
+        run: |
+          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64_console.exe"
+          & $godot --headless --editor --path . --quit
+          if ($LASTEXITCODE -ne 0) { throw "Godot project import failed." }
 
       - name: Smoke-test main menu
         shell: pwsh
-        run: godot --headless --path . --quit-after 3
+        run: |
+          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64_console.exe"
+          & $godot --headless --path . --quit-after 3
+          if ($LASTEXITCODE -ne 0) { throw "Main menu smoke-test failed." }
 
       - name: Smoke-test selected 3D race scene
         shell: pwsh
-        run: godot --headless --path . --quit-after 3 res://scenes/race.tscn
+        run: |
+          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64_console.exe"
+          & $godot --headless --path . --quit-after 3 res://scenes/race.tscn
+          if ($LASTEXITCODE -ne 0) { throw "Race scene smoke-test failed." }
 
       - name: Export Windows executable
         shell: pwsh
         run: |
+          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64_console.exe"
           New-Item -ItemType Directory -Force -Path build | Out-Null
-          godot --headless --verbose --path . --export-release "Windows Desktop" "build/ELDEN 1.exe"
+          & $godot --headless --verbose --path . --export-release "Windows Desktop" "build/ELDEN 1.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Godot export command failed." }
           Get-ChildItem -Recurse build | Format-Table FullName,Length
 
       - name: Verify executable exists
