@@ -42,7 +42,13 @@ class TrackMap extends Control:
 		if mapped.size() > 0:
 			draw_circle(mapped[0], 4.0, Color("#f4f6f8"))
 
+const TEAMS := ["Ferrari", "McLaren", "Mercedes", "Red Bull Racing", "Aston Martin", "Williams", "Alpine", "Haas", "Racing Bulls", "Audi", "Cadillac"]
+
 var selected_track := "BAHRAIN"
+var selected_team := "Ferrari"
+var team_picker: OptionButton
+var team_name_label: Label
+var team_status_label: Label
 var track_screen: Control
 var page_root: Control
 
@@ -214,7 +220,7 @@ func _build_home() -> void:
 	actions.add_child(start)
 	var garage := _button("GARAGE")
 	garage.custom_minimum_size = Vector2(150, 58)
-	garage.pressed.connect(func(): _show_info("GARAGE", "Team cars and the vehicle showcase are being built."))
+	garage.pressed.connect(_show_garage)
 	actions.add_child(garage)
 
 	var art_panel := PanelContainer.new()
@@ -336,9 +342,105 @@ func _on_nav_pressed(destination: String) -> void:
 		"GRAND PRIX":
 			_show_track_select()
 		"GARAGE":
-			_show_info("THE GARAGE", "The garage showcase is still in development.")
+			_show_garage()
 		"SETTINGS":
 			_show_info("SETTINGS", "Graphics and control settings are not wired up yet.")
+
+func _show_garage() -> void:
+	if is_instance_valid(page_root):
+		page_root.queue_free()
+	if is_instance_valid(track_screen):
+		track_screen.queue_free()
+	track_screen = null
+	var garage_root := Control.new()
+	garage_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(garage_root)
+
+	var bg := ColorRect.new()
+	bg.color = BG
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	garage_root.add_child(bg)
+
+	var kicker := _label("TEAM MANAGEMENT  /  2026 SEASON", 11, RED, true)
+	kicker.anchor_left = 0.07
+	kicker.anchor_right = 0.8
+	kicker.anchor_top = 0.07
+	kicker.anchor_bottom = 0.11
+	garage_root.add_child(kicker)
+	var heading := _label("THE GARAGE", 42, WHITE, true)
+	heading.anchor_left = 0.07
+	heading.anchor_right = 0.8
+	heading.anchor_top = 0.12
+	heading.anchor_bottom = 0.20
+	garage_root.add_child(heading)
+	var back := _button("←  BACK")
+	back.custom_minimum_size = Vector2(130, 44)
+	back.anchor_left = 0.84
+	back.anchor_right = 0.93
+	back.anchor_top = 0.075
+	back.anchor_bottom = 0.13
+	back.pressed.connect(_build_home)
+	garage_root.add_child(back)
+
+	var panel := PanelContainer.new()
+	panel.anchor_left = 0.07
+	panel.anchor_right = 0.93
+	panel.anchor_top = 0.27
+	panel.anchor_bottom = 0.82
+	_style_panel(panel, PANEL, LINE)
+	garage_root.add_child(panel)
+	var layout := HBoxContainer.new()
+	layout.add_theme_constant_override("separation", 34)
+	panel.add_child(layout)
+
+	var preview := HeroCarArt.new()
+	preview.custom_minimum_size = Vector2(340, 0)
+	preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.add_child(preview)
+
+	var details := VBoxContainer.new()
+	details.custom_minimum_size = Vector2(390, 0)
+	details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	details.add_theme_constant_override("separation", 13)
+	layout.add_child(details)
+	details.add_child(_label("CHOOSE YOUR CONSTRUCTOR", 11, RED, true))
+	team_name_label = _label(selected_team.to_upper(), 30, WHITE, true)
+	details.add_child(team_name_label)
+	details.add_child(_label("Select a team for your race entry.", 13, MUTED))
+	team_picker = OptionButton.new()
+	team_picker.custom_minimum_size = Vector2(320, 52)
+	team_picker.add_theme_font_size_override("font_size", 16)
+	team_picker.add_theme_color_override("font_color", WHITE)
+	team_picker.add_theme_color_override("font_hover_color", WHITE)
+	for team in TEAMS:
+		team_picker.add_item(team)
+	team_picker.select(TEAMS.find(selected_team))
+	team_picker.item_selected.connect(_on_team_selected)
+	details.add_child(team_picker)
+	team_status_label = _label("CURRENT ENTRY  /  " + selected_team.to_upper(), 10, MUTED, true)
+	details.add_child(team_status_label)
+	var note := _label("Team selection is saved for this game session. Car liveries and team-specific 3D models are not yet implemented.", 11, MUTED)
+	note.custom_minimum_size = Vector2(330, 55)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	details.add_child(note)
+
+	var footer := _label("ELDEN 1  /  TEAM SELECTION", 9, MUTED, true)
+	footer.anchor_left = 0.07
+	footer.anchor_right = 0.93
+	footer.anchor_top = 0.93
+	footer.anchor_bottom = 0.97
+	garage_root.add_child(footer)
+
+func _on_team_selected(index: int) -> void:
+	if index < 0 or index >= TEAMS.size():
+		return
+	selected_team = TEAMS[index]
+	get_tree().root.set_meta("selected_team", selected_team)
+	if is_instance_valid(team_name_label):
+		team_name_label.text = selected_team.to_upper()
+	if is_instance_valid(team_status_label):
+		team_status_label.text = "CURRENT ENTRY  /  " + selected_team.to_upper()
 
 func _show_info(title_text: String, body_text: String) -> void:
 	var overlay := AcceptDialog.new()
