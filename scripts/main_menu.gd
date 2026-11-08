@@ -40,7 +40,7 @@ class TrackMap extends Control:
 			mapped.append(Vector2(10.0 + p.x * maxf(size.x - 20.0, 1.0), 8.0 + p.y * maxf(size.y - 16.0, 1.0)))
 		draw_polyline(mapped, Color("#e32636"), 3.0, true)
 		if mapped.size() > 0:
-			draw_circle(mapped[0], 4.0, WHITE)
+			draw_circle(mapped[0], 4.0, Color("#f4f6f8"))
 
 var selected_track := "BAHRAIN"
 var track_screen: Control
@@ -66,8 +66,7 @@ func _label(value: String, font_size: int, color: Color, bold: bool = false) -> 
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
 	if bold:
-		label.add_theme_color_override("font_weight", 800)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
 func _button(value: String, primary: bool = false) -> Button:
