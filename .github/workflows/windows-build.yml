@@ -47,6 +47,18 @@ jobs:
           if ($logText -match 'SCRIPT ERROR:|Parse Error:|Failed to load script|Invalid call\.') { throw "Godot reported a script error. Inspect $env:TEMP\godot-import.out and $env:TEMP\godot-import.err." }
           if ($p.ExitCode -ne 0) { throw "Godot project import failed: $($p.ExitCode)" }
 
+      - name: Validate all 12 circuit data files
+        shell: pwsh
+        run: |
+          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64.exe"
+          $p = Start-Process -FilePath $godot -ArgumentList '--headless --path . --script res://scripts/validate_tracks.gd' -Wait -PassThru -RedirectStandardOutput "$env:TEMP\godot-tracks.out" -RedirectStandardError "$env:TEMP\godot-tracks.err"
+          Get-Content "$env:TEMP\godot-tracks.out" -ErrorAction SilentlyContinue
+          Get-Content "$env:TEMP\godot-tracks.err" -ErrorAction SilentlyContinue
+          $logText = (Get-Content "$env:TEMP\godot-tracks.out" -Raw -ErrorAction SilentlyContinue) + (Get-Content "$env:TEMP\godot-tracks.err" -Raw -ErrorAction SilentlyContinue)
+          if ($logText -match 'TRACK VALIDATION FAILED|SCRIPT ERROR:|Parse Error:|Failed to load script|Invalid call\.') { throw "One or more circuits failed runtime validation." }
+          if ($p.ExitCode -ne 0) { throw "Circuit validation failed: $($p.ExitCode)" }
+          if ($logText -notmatch 'ALL 12 TRACKS LOADED SUCCESSFULLY') { throw "Circuit validation did not confirm all 12 tracks." }
+
       - name: Smoke-test main menu
         shell: pwsh
         run: |
