@@ -19,8 +19,8 @@ func _ready() -> void:
 	_build_temporary_car_visual()
 
 func _physics_process(delta: float) -> void:
-	var throttle := Input.get_action_strength("accelerate") - Input.get_action_strength("brake")
-	var steer_input := Input.get_action_strength("steer_right") - Input.get_action_strength("steer_left")
+	var throttle := float(Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP)) - float(Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN))
+	var steer_input := float(Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT)) - float(Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT))
 	if throttle > 0.0:
 		speed = move_toward(speed, MAX_SPEED, ACCELERATION * throttle * delta)
 	elif throttle < 0.0:
