@@ -5,26 +5,38 @@ A Windows-first Formula racing game project.
 ## Visual target
 ELDEN 1 is being built around a premium motorsport presentation: detailed 3D vehicle assets, realistic circuit environments, physically based materials, cinematic lighting, and a readable T-cam racing view.
 
-**Quality rule:** placeholder cubes, primitive polygon cars, and unfinished greybox tracks are not acceptable as final player-facing content. If a required production asset is not ready, the feature stays clearly marked as work in progress.
+**Quality rule:** temporary prototype geometry is not final player-facing content. The Ferrari SF-26 model still needs to be imported before the final car presentation can be considered complete.
 
 ## Engine
 Godot 4.3, using Forward+ rendering for desktop. The project targets Windows 10/11 64-bit.
 
-## Current status
-The premium main-menu foundation is in the project. Race gameplay and the imported Ferrari model are not yet integrated, so this is not yet a playable racing game.
+## Current implementation
+- Premium main-menu foundation and Grand Prix circuit picker.
+- Twelve distinct procedural 3D circuit layouts: Bahrain, Jeddah, Melbourne, Suzuka, Monaco, Silverstone, Spa, Monza, Singapore, Austin, Mexico City, and Abu Dhabi.
+- Road mesh, collision surface, kerbs, trackside barriers, start/finish line, grass environment, lighting, and sky are generated for the selected circuit.
+- A basic keyboard-driven test car, T-cam camera, and speed readout are connected to the race scene.
+- The current circuits are original approximations inspired by each venue's general layout, not exact surveyed recreations or licensed circuit scans.
+- The test car is temporary geometry. The supplied Ferrari SF-26 model has not yet been integrated.
+- AI opponents, race weekend rules, tyre simulation, damage, pit lane, and finished production-quality trackside scenery are not implemented yet.
+
+## Controls
+- W / Up Arrow: accelerate
+- S / Down Arrow: brake / reverse
+- A / Left Arrow: steer left
+- D / Right Arrow: steer right
+- Escape: return to menu
 
 ## Windows build
 GitHub Actions builds a standalone Windows x64 executable whenever changes are pushed to `main`. It imports and smoke-tests the Godot project before exporting.
 
 Open the repository's **Actions** tab, select **Build ELDEN 1 for Windows**, and download the `ELDEN-1-Windows-x64` artifact from a successful run. The artifact is an executable, not just the source project.
 
-## Planned milestones
-1. Complete and verify the premium menu presentation.
-2. Integrate the supplied SF-26 model and team livery system, with T-cam camera.
-3. Build a detailed test circuit with believable trackside assets and lighting.
-4. Implement vehicle physics, tyres, braking, gears, and assists.
-5. Add race weekend flow, AI, flags, penalties, damage, and HUD.
-6. Add graphics settings and verified Windows builds.
+## Next milestones
+1. Import and verify the supplied SF-26 model, then build the team livery system.
+2. Replace temporary trackside geometry with venue-specific grandstands, buildings, scenery, and track markings.
+3. Improve vehicle physics, tyres, braking, gears, and assists.
+4. Add AI, race weekend flow, flags, penalties, damage, and HUD.
+5. Add graphics settings and continue testing Windows builds.
 
 ## Running from source
 Install Godot 4.3 standard desktop, open this folder's `project.godot`, and run the project.
