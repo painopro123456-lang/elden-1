@@ -1,0 +1,58 @@
+name: Build ELDEN 1 for Windows
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-build:
+    name: Windows x64 executable
+    runs-on: windows-latest
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Install Godot 4.3 and Windows export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.3.0
+          use-dotnet: false
+          include-templates: true
+
+      - name: Verify Godot installation
+        shell: pwsh
+        run: godot --version
+
+      - name: Import project and check scripts
+        shell: pwsh
+        run: godot --headless --editor --path . --quit
+
+      - name: Smoke-test main scene
+        shell: pwsh
+        run: godot --headless --path . --quit-after 3
+
+      - name: Export Windows executable
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build | Out-Null
+          godot --headless --path . --export-release "Windows Desktop" "build/ELDEN 1.exe"
+
+      - name: Verify executable exists
+        shell: pwsh
+        run: |
+          if (!(Test-Path "build/ELDEN 1.exe")) {
+            throw "Windows executable was not created."
+          }
+          Get-Item "build/ELDEN 1.exe" | Format-List Name,Length
+
+      - name: Upload standalone Windows executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: ELDEN-1-Windows-x64
+          path: build/ELDEN 1.exe
+          if-no-files-found: error
+          retention-days: 14
