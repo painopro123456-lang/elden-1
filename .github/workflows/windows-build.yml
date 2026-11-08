@@ -26,56 +26,66 @@ jobs:
       - name: Verify Godot console installation
         shell: pwsh
         run: |
-          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64_console.exe"
+          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64.exe"
           if (!(Test-Path $godot)) {
             Get-ChildItem (Join-Path $env:USERPROFILE "godot") | Format-Table Name,Length
             throw "Godot console executable is missing."
           }
-          & $godot --version
-          if ($LASTEXITCODE -ne 0) { throw "Godot version check failed." }
+          $p = Start-Process -FilePath $godot -ArgumentList "--headless --version" -Wait -PassThru -RedirectStandardOutput "$env:TEMP\godot-version.out" -RedirectStandardError "$env:TEMP\godot-version.err"
+          Get-Content "$env:TEMP\godot-version.out" -ErrorAction SilentlyContinue
+          Get-Content "$env:TEMP\godot-version.err" -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { throw "Godot version check failed: $($p.ExitCode)" }
 
       - name: Import project and check scripts
         shell: pwsh
         run: |
-          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64_console.exe"
-          & $godot --headless --editor --path . --quit
-          if ($LASTEXITCODE -ne 0) { throw "Godot project import failed." }
+          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64.exe"
+          $p = Start-Process -FilePath $godot -ArgumentList '--headless --editor --path . --quit' -Wait -PassThru -RedirectStandardOutput "$env:TEMP\godot-import.out" -RedirectStandardError "$env:TEMP\godot-import.err"
+          Get-Content "$env:TEMP\godot-import.out" -ErrorAction SilentlyContinue
+          Get-Content "$env:TEMP\godot-import.err" -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { throw "Godot project import failed: $($p.ExitCode)" }
 
       - name: Smoke-test main menu
         shell: pwsh
         run: |
-          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64_console.exe"
-          & $godot --headless --path . --quit-after 3
-          if ($LASTEXITCODE -ne 0) { throw "Main menu smoke-test failed." }
+          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64.exe"
+          $p = Start-Process -FilePath $godot -ArgumentList '--headless --path . --quit-after 3' -Wait -PassThru -RedirectStandardOutput "$env:TEMP\godot-menu.out" -RedirectStandardError "$env:TEMP\godot-menu.err"
+          Get-Content "$env:TEMP\godot-menu.out" -ErrorAction SilentlyContinue
+          Get-Content "$env:TEMP\godot-menu.err" -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { throw "Main menu smoke-test failed: $($p.ExitCode)" }
 
       - name: Smoke-test selected 3D race scene
         shell: pwsh
         run: |
-          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64_console.exe"
-          & $godot --headless --path . --quit-after 3 res://scenes/race.tscn
-          if ($LASTEXITCODE -ne 0) { throw "Race scene smoke-test failed." }
+          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64.exe"
+          $p = Start-Process -FilePath $godot -ArgumentList '--headless --path . --quit-after 3 res://scenes/race.tscn' -Wait -PassThru -RedirectStandardOutput "$env:TEMP\godot-race.out" -RedirectStandardError "$env:TEMP\godot-race.err"
+          Get-Content "$env:TEMP\godot-race.out" -ErrorAction SilentlyContinue
+          Get-Content "$env:TEMP\godot-race.err" -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { throw "Race scene smoke-test failed: $($p.ExitCode)" }
 
       - name: Export Windows executable
         shell: pwsh
         run: |
-          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64_console.exe"
+          $godot = Join-Path $env:USERPROFILE "godot/Godot_v4.3-stable_win64.exe"
           New-Item -ItemType Directory -Force -Path build | Out-Null
-          & $godot --headless --verbose --path . --export-release "Windows Desktop" "build/ELDEN 1.exe"
-          if ($LASTEXITCODE -ne 0) { throw "Godot export command failed." }
+          $p = Start-Process -FilePath $godot -ArgumentList '--headless --verbose --path . --export-release "Windows Desktop" "build/ELDEN1.exe"' -Wait -PassThru -RedirectStandardOutput "$env:TEMP\godot-export.out" -RedirectStandardError "$env:TEMP\godot-export.err"
+          Get-Content "$env:TEMP\godot-export.out" -ErrorAction SilentlyContinue
+          Get-Content "$env:TEMP\godot-export.err" -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { throw "Godot export command failed: $($p.ExitCode)" }
           Get-ChildItem -Recurse build | Format-Table FullName,Length
 
       - name: Verify executable exists
         shell: pwsh
         run: |
-          if (!(Test-Path "build/ELDEN 1.exe")) {
+          if (!(Test-Path "build/ELDEN1.exe")) {
             throw "Windows executable was not created."
           }
-          Get-Item "build/ELDEN 1.exe" | Format-List Name,Length
+          Get-Item "build/ELDEN1.exe" | Format-List Name,Length
 
       - name: Upload standalone Windows executable
         uses: actions/upload-artifact@v4
         with:
           name: ELDEN-1-Windows-x64
-          path: build/ELDEN 1.exe
+          path: build/ELDEN1.exe
           if-no-files-found: error
           retention-days: 14
