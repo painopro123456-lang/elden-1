@@ -13,17 +13,45 @@ func _build_race() -> void:
 	var track := TrackBuilder.new()
 	track.name = "Circuit"
 	add_child(track)
-	track.build(selected_track)
+	if not track.build(selected_track) or track.centerline.size() < 2:
+		_show_load_error("The selected circuit could not be loaded. Return to the menu and choose another track.")
+		return
 	car = RaceCar.new()
 	car.name = "PlayerCar"
 	add_child(car)
 	car.global_position = track.get_start_position() + Vector3(0, 0.4, 0)
 	var points: PackedVector3Array = track.centerline
 	var tangent := (points[1] - points[0]).normalized()
+	if tangent.length_squared() < 0.001:
+		tangent = Vector3.FORWARD
 	car.rotation.y = atan2(-tangent.x, -tangent.z)
 	_add_camera()
 	_add_hud()
 	car.telemetry_changed.connect(_on_telemetry_changed)
+
+func _show_load_error(message: String) -> void:
+	var layer := CanvasLayer.new()
+	add_child(layer)
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.position = Vector2(-340, -110)
+	panel.size = Vector2(680, 220)
+	layer.add_child(panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 18)
+	panel.add_child(column)
+	var title := Label.new()
+	title.text = "RACE COULD NOT START"
+	title.add_theme_font_size_override("font_size", 24)
+	column.add_child(title)
+	var detail := Label.new()
+	detail.text = message
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(detail)
+	var back := Button.new()
+	back.text = "BACK TO MENU"
+	back.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
+	column.add_child(back)
 
 func _add_camera() -> void:
 	var camera := Camera3D.new()
