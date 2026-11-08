@@ -320,8 +320,5 @@ func _select_track(track_name: String) -> void:
 	_show_track_select()
 
 func _on_start_race_pressed() -> void:
-	content_title.text = selected_track + " SELECTED"
-	content_body.text = "Circuit selected. The race session and driving gameplay are still in development."
-	if is_instance_valid(track_screen):
-		track_screen.queue_free()
-		track_screen = null
+	get_tree().root.set_meta("selected_track", selected_track)
+	get_tree().change_scene_to_file("res://scenes/race.tscn")
