@@ -294,29 +294,43 @@ func _track_preview(track_name: String) -> PackedVector2Array:
 	if path.is_empty() or not FileAccess.file_exists(path):
 		return PackedVector2Array()
 	var points := PackedVector2Array()
-	if path.ends_with(".txt"):
-		var file := FileAccess.open(path, FileAccess.READ)
-		if file == null:
-			return points
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return points
+	if path.ends_with(".txt") or path.ends_with(".csv"):
 		while not file.eof_reached() and points.size() < 240:
 			var fields := file.get_line().split(",")
 			if fields.size() >= 2 and fields[0].strip_edges().is_valid_float() and fields[1].strip_edges().is_valid_float():
 				points.append(Vector2(float(fields[0]), float(fields[1])))
-		file.close()
 	else:
-		var file := FileAccess.open(path, FileAccess.READ)
-		if file == null:
-			return points
 		var parsed: Variant = JSON.parse_string(file.get_as_text())
-		file.close()
 		if parsed is Dictionary:
-			var features: Array = parsed.get("features", [])
-			if not features.is_empty():
-				var coords: Array = features[0].get("geometry", {}).get("coordinates", [])
-				for p in coords:
-					if points.size() >= 240:
-						break
-					points.append(Vector2(float(p[0]), float(p[1])))
+			var features_value: Variant = parsed.get("features", [])
+			if features_value is Array and not features_value.is_empty() and features_value[0] is Dictionary:
+				var geometry_value: Variant = features_value[0].get("geometry", {})
+				if geometry_value is Dictionary:
+					var coords_value: Variant = geometry_value.get("coordinates", [])
+					if coords_value is Array:
+						var coords: Array = coords_value
+						if str(geometry_value.get("type", "")) == "MultiLineString":
+							var longest_line: Array = []
+							for candidate in coords:
+								if candidate is Array and candidate.size() > longest_line.size():
+									longest_line = candidate
+							coords = longest_line
+						for coordinate in coords:
+							if points.size() >= 240:
+								break
+							if not coordinate is Array or coordinate.size() < 2:
+								continue
+						var lon_value: Variant = coordinate[0]
+						var lat_value: Variant = coordinate[1]
+						if (typeof(lon_value) == TYPE_FLOAT or typeof(lon_value) == TYPE_INT) and (typeof(lat_value) == TYPE_FLOAT or typeof(lat_value) == TYPE_INT):
+							var lon := float(lon_value)
+							var lat := float(lat_value)
+							if is_finite(lon) and is_finite(lat):
+								points.append(Vector2(lon, lat))
+	file.close()
 	if points.size() < 3:
 		return PackedVector2Array()
 	var min_x := INF
