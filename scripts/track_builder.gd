@@ -24,7 +24,7 @@ var left_widths := PackedFloat32Array()
 var right_widths := PackedFloat32Array()
 var load_error := ""
 
-func build(track_name: String) -> bool:
+func build(track_name: String, build_visuals: bool = true) -> bool:
 	centerline.clear()
 	left_widths.clear()
 	right_widths.clear()
@@ -52,13 +52,14 @@ func build(track_name: String) -> bool:
 		load_error = "Circuit geometry is not a usable closed loop: " + path
 		push_error(load_error)
 		return false
-	_add_environment()
-	_add_road()
-	_add_kerbs()
-	_add_barriers()
-	_add_trackside_details()
-	_add_circuit_facilities()
-	_add_start_line()
+	if build_visuals:
+		_add_environment()
+		_add_road()
+		_add_kerbs()
+		_add_barriers()
+		_add_trackside_details()
+		_add_circuit_facilities()
+		_add_start_line()
 	return true
 
 func _load_csv(path: String) -> bool:
