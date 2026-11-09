@@ -79,6 +79,37 @@ func _box(name: String, dimensions: Vector3, position: Vector3, material: Materi
 	add_child(instance)
 	return instance
 
+func _add_tapered_mesh(mesh_name: String, sections: Array, material: Material, side: float = 0.0) -> void:
+	var vertices := PackedVector3Array()
+	var indices := PackedInt32Array()
+	for section in sections:
+		var z := float(section[0])
+		var y := float(section[1])
+		var half_width := float(section[2])
+		var half_height := float(section[3])
+		var x_offset := side * 0.84
+		vertices.append(Vector3(x_offset - half_width, y - half_height * 0.72, z))
+		vertices.append(Vector3(x_offset + half_width, y - half_height * 0.72, z))
+		vertices.append(Vector3(x_offset + half_width * 0.78, y + half_height, z))
+		vertices.append(Vector3(x_offset - half_width * 0.78, y + half_height, z))
+	for ring in range(sections.size() - 1):
+		var a := ring * 4
+		var b := (ring + 1) * 4
+		for corner in range(4):
+			var next_corner := (corner + 1) % 4
+			indices.append_array(PackedInt32Array([a + corner, a + next_corner, b + corner, a + next_corner, b + next_corner, b + corner]))
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var instance := MeshInstance3D.new()
+	instance.name = mesh_name
+	instance.mesh = mesh
+	instance.material_override = material
+	add_child(instance)
+
 func _build_race_car_visual() -> void:
 	var paint := _material(team_color, 0.58, 0.28)
 	var paint_light := _material(team_color.lightened(0.22), 0.48, 0.3)
@@ -90,20 +121,19 @@ func _build_race_car_visual() -> void:
 	var accent := _material(Color("#f1f3f5"), 0.35, 0.34)
 
 	# Low, tapered central chassis and long nose.
-	_box("FloorAndPlank", Vector3(1.62, 0.16, 4.2), Vector3(0, 0.22, -0.05), carbon_dark)
-	_box("MainBody", Vector3(1.35, 0.36, 2.55), Vector3(0, 0.49, 0.12), paint)
-	_box("TaperedNose", Vector3(0.62, 0.20, 2.15), Vector3(0, 0.50, -2.08), paint_light)
-	_box("NoseTip", Vector3(0.28, 0.13, 0.75), Vector3(0, 0.52, -3.34), paint)
-	_box("CockpitSurround", Vector3(0.82, 0.19, 0.95), Vector3(0, 0.70, -0.42), carbon)
-	_box("CockpitGlass", Vector3(0.54, 0.29, 0.55), Vector3(0, 0.83, -0.52), glass)
-	_box("EngineCover", Vector3(0.68, 0.43, 1.42), Vector3(0, 0.72, 0.82), paint)
+	_add_tapered_mesh("CarbonFloor", [[-3.72,0.16,0.48,0.30],[-2.85,0.16,0.72,0.42],[-1.75,0.16,0.84,0.48],[0.90,0.16,0.91,0.48],[2.15,0.16,0.73,0.38]], carbon_dark)
+	_add_tapered_mesh("SculptedMonocoque", [[-3.72,0.36,0.12,0.16],[-2.85,0.40,0.27,0.24],[-1.70,0.43,0.57,0.31],[-0.65,0.44,0.68,0.35],[0.72,0.43,0.68,0.35],[1.65,0.40,0.47,0.30],[2.15,0.38,0.30,0.24]], paint)
+	_add_tapered_mesh("EngineCover", [[-0.10,0.67,0.30,0.27],[0.55,0.72,0.39,0.40],[1.20,0.73,0.34,0.40],[1.80,0.60,0.22,0.30]], paint_light)
+	_box("CockpitSurround", Vector3(0.80,0.13,0.88), Vector3(0,0.73,-0.42), carbon)
+	_add_tapered_mesh("CockpitGlass", [[-0.98,0.79,0.12,0.12],[-0.65,0.96,0.27,0.18],[-0.22,0.96,0.24,0.18],[0.02,0.79,0.12,0.12]], glass)
 
 	# Sculpted sidepods, inlets and floor edge details.
 	for side in [-1.0, 1.0]:
-		_box("Sidepod", Vector3(0.58, 0.42, 1.52), Vector3(side * 0.84, 0.46, 0.35), paint)
-		_box("SidepodInlet", Vector3(0.09, 0.23, 0.52), Vector3(side * 1.14, 0.60, -0.08), carbon_dark)
-		_box("FloorEdge", Vector3(0.12, 0.10, 3.2), Vector3(side * 0.82, 0.25, -0.1), carbon)
-		_box("Mirror", Vector3(0.20, 0.10, 0.16), Vector3(side * 0.73, 0.91, -0.85), paint_light)
+		_add_tapered_mesh("SculptedSidepod", [[-0.62,0.42,0.12,0.15],[-0.20,0.47,0.28,0.25],[0.55,0.47,0.32,0.27],[1.15,0.43,0.22,0.18]], paint, side)
+		_box("SidepodInlet", Vector3(0.055,0.20,0.48), Vector3(side*1.105,0.60,-0.12), carbon_dark)
+		_box("FloorEdge", Vector3(0.10,0.09,3.35), Vector3(side*0.91,0.24,-0.12), carbon)
+		_box("Mirror", Vector3(0.18,0.08,0.14), Vector3(side*0.70,0.91,-0.88), paint_light)
+		_box("SidepodLiveryStripe", Vector3(0.025,0.035,1.12), Vector3(side*1.12,0.48,0.28), accent)
 
 	# Front and rear wings with endplates and supports.
 	_box("FrontWingMainPlane", Vector3(3.35, 0.13, 0.48), Vector3(0, 0.27, -3.48), carbon)
@@ -130,6 +160,17 @@ func _build_race_car_visual() -> void:
 			wheel.rotation.z = PI * 0.5
 			wheel.material_override = rubber
 			add_child(wheel)
+			var sidewall := MeshInstance3D.new()
+			var sidewall_mesh := TorusMesh.new()
+			sidewall_mesh.inner_radius = 0.435
+			sidewall_mesh.outer_radius = 0.475
+			sidewall_mesh.rings = 12
+			sidewall_mesh.ring_segments = 32
+			sidewall.mesh = sidewall_mesh
+			sidewall.position = Vector3(x + signf(x) * 0.195, 0.44, z)
+			sidewall.rotation.z = PI * 0.5
+			sidewall.material_override = _material(Color("#30343a"), 0.0, 0.9)
+			add_child(sidewall)
 			var hub := MeshInstance3D.new()
 			var hub_mesh := CylinderMesh.new()
 			hub_mesh.top_radius = 0.22
@@ -141,6 +182,17 @@ func _build_race_car_visual() -> void:
 			hub.rotation.z = PI * 0.5
 			hub.material_override = rim
 			add_child(hub)
+			var hub_cap := MeshInstance3D.new()
+			var cap_mesh := CylinderMesh.new()
+			cap_mesh.top_radius = 0.105
+			cap_mesh.bottom_radius = 0.105
+			cap_mesh.height = 0.405
+			cap_mesh.radial_segments = 20
+			hub_cap.mesh = cap_mesh
+			hub_cap.position = Vector3(x, 0.44, z)
+			hub_cap.rotation.z = PI * 0.5
+			hub_cap.material_override = paint_light
+			add_child(hub_cap)
 
 	# Halo hoop and central support.
 	var halo := MeshInstance3D.new()
@@ -162,7 +214,10 @@ func _build_race_car_visual() -> void:
 	_box("EngineCoverStripe", Vector3(0.10, 0.025, 1.18), Vector3(0, 0.95, 0.82), accent)
 	_box("RearDiffuser", Vector3(1.32, 0.16, 0.54), Vector3(0, 0.18, 1.95), carbon)
 	_box("FrontSuspensionLeft", Vector3(0.08, 0.08, 1.12), Vector3(-0.78, 0.47, -1.80), carbon)
-	_box("FrontSuspensionRight", Vector3(0.08, 0.08, 1.12), Vector3(0.78, 0.47, -1.80), carbon)
+	_box("FrontSuspensionRight", Vector3(0.055,0.055,1.22), Vector3(0.78,0.47,-1.80), carbon)
+	_box("RearSuspensionLeft", Vector3(0.055,0.055,1.05), Vector3(-0.78,0.54,1.02), carbon)
+	_box("RearSuspensionRight", Vector3(0.055,0.055,1.05), Vector3(0.78,0.54,1.02), carbon)
+	_box("RearRainLight", Vector3(0.14,0.18,0.12), Vector3(0,0.42,2.12), _material(Color("#ff2438"),0.1,0.2))
 
 	var collision := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
