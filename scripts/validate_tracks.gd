@@ -47,7 +47,7 @@ func _run_track_checks() -> void:
 			quit(1)
 			return
 		print("TRACK VALIDATION PASSED: ", track_name, " (", builder.centerline.size(), " points)")
-		builder.queue_free()
+		builder.free()
 	var car := RaceCar.new()
 	root.add_child(car)
 	if not _has_collision_shape(car):
