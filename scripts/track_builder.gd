@@ -420,6 +420,19 @@ func _add_segmented_strip(name: String, vertices: PackedVector3Array, indices: P
 		instance.material_override = red if segment == 0 else white
 		add_child(instance)
 
+func _add_box_collision(collision_name: String, dimensions: Vector3, position: Vector3, rotation: Vector3 = Vector3.ZERO) -> void:
+	var body := StaticBody3D.new()
+	body.name = collision_name
+	body.position = position
+	body.rotation = rotation
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = dimensions
+	collision.shape = shape
+	body.add_child(collision)
+	add_child(body)
+
+
 func _add_barriers() -> void:
 	var rail_material := _make_material(Color("#68727b"), 0.42, 0.72)
 	var post_material := _make_material(Color("#303a45"), 0.7, 0.45)
@@ -435,6 +448,7 @@ func _add_barriers() -> void:
 			post.position = Vector3(position.x, 0.72, position.z)
 			post.material_override = post_material
 			add_child(post)
+			_add_box_collision("BarrierPostCollision", post_mesh.size, post.position)
 			if i + 5 < centerline.size():
 				var next_side := _side_at(i + 5)
 				var next_width := left_widths[i + 5] if direction < 0.0 else right_widths[i + 5]
@@ -448,6 +462,7 @@ func _add_barriers() -> void:
 				rail.look_at(Vector3(next_position.x, 1.18, next_position.z), Vector3.UP)
 				rail.material_override = rail_material
 				add_child(rail)
+				_add_box_collision("BarrierRailCollision", rail_mesh.size, rail.position, rail.rotation)
 
 func _add_trackside_details() -> void:
 	var board_material := _make_material(Color("#101923"), 0.55, 0.18)
