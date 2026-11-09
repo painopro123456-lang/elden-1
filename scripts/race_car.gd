@@ -14,6 +14,7 @@ var speed := 0.0
 var steering := 0.0
 var team_name := "Ferrari"
 var team_color := Color("#dc0000")
+var rolling_wheels: Array[Node3D] = []
 
 func _ready() -> void:
 	floor_snap_length = 0.5
@@ -42,6 +43,10 @@ func _physics_process(delta: float) -> void:
 	velocity.z = forward.z * speed
 	velocity.y -= 24.0 * delta
 	move_and_slide()
+	var wheel_rotation := speed * delta / 0.49
+	for wheel_part in rolling_wheels:
+		if is_instance_valid(wheel_part):
+			wheel_part.rotate_object_local(Vector3.UP, wheel_rotation)
 	telemetry_changed.emit(absf(speed) * 3.6)
 
 func _team_color(name: String) -> Color:
@@ -98,12 +103,12 @@ func _add_tapered_mesh(mesh_name: String, sections: Array, material: Material, s
 		for corner in range(4):
 			var next_corner := (corner + 1) % 4
 			indices.append_array(PackedInt32Array([a + corner, a + next_corner, b + corner, a + next_corner, b + next_corner, b + corner]))
-	var arrays := []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = vertices
-	arrays[Mesh.ARRAY_INDEX] = indices
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for index in indices:
+		surface.add_vertex(vertices[index])
+	surface.generate_normals()
+	var mesh := surface.commit()
 	var instance := MeshInstance3D.new()
 	instance.name = mesh_name
 	instance.mesh = mesh
@@ -160,6 +165,7 @@ func _build_race_car_visual() -> void:
 			wheel.rotation.z = PI * 0.5
 			wheel.material_override = rubber
 			add_child(wheel)
+			rolling_wheels.append(wheel)
 			var sidewall := MeshInstance3D.new()
 			var sidewall_mesh := TorusMesh.new()
 			sidewall_mesh.inner_radius = 0.435
@@ -171,6 +177,7 @@ func _build_race_car_visual() -> void:
 			sidewall.rotation.z = PI * 0.5
 			sidewall.material_override = _material(Color("#30343a"), 0.0, 0.9)
 			add_child(sidewall)
+			rolling_wheels.append(sidewall)
 			var hub := MeshInstance3D.new()
 			var hub_mesh := CylinderMesh.new()
 			hub_mesh.top_radius = 0.22
@@ -182,6 +189,7 @@ func _build_race_car_visual() -> void:
 			hub.rotation.z = PI * 0.5
 			hub.material_override = rim
 			add_child(hub)
+			rolling_wheels.append(hub)
 			var hub_cap := MeshInstance3D.new()
 			var cap_mesh := CylinderMesh.new()
 			cap_mesh.top_radius = 0.105
@@ -193,6 +201,7 @@ func _build_race_car_visual() -> void:
 			hub_cap.rotation.z = PI * 0.5
 			hub_cap.material_override = paint_light
 			add_child(hub_cap)
+			rolling_wheels.append(hub_cap)
 
 	# Halo hoop and central support.
 	var halo := MeshInstance3D.new()
