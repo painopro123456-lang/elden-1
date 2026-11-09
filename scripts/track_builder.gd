@@ -343,7 +343,7 @@ func _add_barriers() -> void:
 		var side := _side_at(i)
 		for direction in [-1.0, 1.0]:
 			var width := left_widths[i] if direction < 0.0 else right_widths[i]
-			var position := centerline[i] + side * direction * (width + BARRIER_OFFSET)
+			var position: Vector3 = centerline[i] + side * direction * (width + BARRIER_OFFSET)
 			var post := MeshInstance3D.new()
 			var post_mesh := BoxMesh.new()
 			post_mesh.size = Vector3(0.22, 1.45, 0.22)
@@ -354,8 +354,8 @@ func _add_barriers() -> void:
 			if i + 5 < centerline.size():
 				var next_side := _side_at(i + 5)
 				var next_width := left_widths[i + 5] if direction < 0.0 else right_widths[i + 5]
-				var next_position := centerline[i + 5] + next_side * direction * (next_width + BARRIER_OFFSET)
-				var midpoint := (position + next_position) * 0.5
+				var next_position: Vector3 = centerline[i + 5] + next_side * direction * (next_width + BARRIER_OFFSET)
+				var midpoint: Vector3 = (position + next_position) * 0.5
 				var rail := MeshInstance3D.new()
 				var rail_mesh := BoxMesh.new()
 				rail_mesh.size = Vector3(0.28, 0.22, position.distance_to(next_position) + 0.3)
@@ -372,7 +372,7 @@ func _add_trackside_details() -> void:
 		var side := _side_at(i)
 		for direction in [-1.0, 1.0]:
 			var width := left_widths[i] if direction < 0.0 else right_widths[i]
-			var p := centerline[i] + side * direction * (width + 10.0)
+			var p: Vector3 = centerline[i] + side * direction * (width + 10.0)
 			var board := MeshInstance3D.new()
 			var board_mesh := BoxMesh.new()
 			board_mesh.size = Vector3(5.8, 1.35, 0.18)
