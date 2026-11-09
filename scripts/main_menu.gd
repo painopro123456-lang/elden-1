@@ -357,13 +357,13 @@ func _track_preview(track_name: String) -> PackedVector2Array:
 								break
 							if not coordinate is Array or coordinate.size() < 2:
 								continue
-						var lon_value: Variant = coordinate[0]
-						var lat_value: Variant = coordinate[1]
-						if (typeof(lon_value) == TYPE_FLOAT or typeof(lon_value) == TYPE_INT) and (typeof(lat_value) == TYPE_FLOAT or typeof(lat_value) == TYPE_INT):
-							var lon := float(lon_value)
-							var lat := float(lat_value)
-							if is_finite(lon) and is_finite(lat):
-								points.append(Vector2(lon, lat))
+							var lon_value: Variant = coordinate[0]
+							var lat_value: Variant = coordinate[1]
+							if (typeof(lon_value) == TYPE_FLOAT or typeof(lon_value) == TYPE_INT) and (typeof(lat_value) == TYPE_FLOAT or typeof(lat_value) == TYPE_INT):
+								var lon := float(lon_value)
+								var lat := float(lat_value)
+								if is_finite(lon) and is_finite(lat):
+									points.append(Vector2(lon, lat))
 	file.close()
 	if points.size() < 3:
 		return PackedVector2Array()
