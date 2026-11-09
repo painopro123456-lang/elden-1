@@ -183,7 +183,26 @@ func _add_environment() -> void:
 	var plane := PlaneMesh.new()
 	plane.size = ground_size
 	ground.mesh = plane
-	ground.material_override = _make_material(Color("#263a30"), 1.0)
+	var grass_shader := Shader.new()
+	grass_shader.code = """
+shader_type spatial;
+render_mode diffuse_burley, specular_schlick_ggx;
+varying vec3 world_pos;
+void vertex() { world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
+float hash21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+void fragment() {
+	vec2 cell = floor(world_pos.xz * 0.42);
+	float grain = hash21(cell);
+	float variation = hash21(floor(world_pos.xz * 0.075));
+	vec3 base = mix(vec3(0.035,0.095,0.061), vec3(0.075,0.145,0.083), variation);
+	base *= mix(0.78, 1.12, grain);
+	ALBEDO = base;
+	ROUGHNESS = 1.0;
+}
+"""
+	var grass_material := ShaderMaterial.new()
+	grass_material.shader = grass_shader
+	ground.material_override = grass_material
 	ground.position = Vector3((min_x + max_x) * 0.5, -0.24, (min_z + max_z) * 0.5)
 	add_child(ground)
 	var floor_body := StaticBody3D.new()
@@ -211,7 +230,12 @@ func _add_environment() -> void:
 	env.ambient_light_energy = 0.72
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.glow_enabled = true
-	env.glow_intensity = 0.18
+	env.glow_intensity = 0.22
+	env.ssao_enabled = true
+	env.ssao_radius = 2.0
+	env.ssao_intensity = 1.15
+	env.ssil_enabled = true
+	env.ssil_intensity = 0.35
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 	world.environment = env
 	add_child(world)
@@ -278,8 +302,28 @@ func _add_road() -> void:
 	var road := MeshInstance3D.new()
 	road.name = "AsphaltCircuit"
 	road.mesh = mesh
-	var asphalt := _make_material(Color("#34383e"), 0.96)
-	asphalt.uv1_scale = Vector3(1.0, 1.0, 1.0)
+	var asphalt_shader := Shader.new()
+	asphalt_shader.code = """
+shader_type spatial;
+render_mode diffuse_burley, specular_schlick_ggx;
+uniform vec3 asphalt_tone : source_color = vec3(0.105, 0.115, 0.13);
+uniform float grain_scale = 155.0;
+varying vec2 road_uv;
+float hash21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+void vertex() { road_uv = UV; }
+void fragment() {
+	vec2 p = road_uv * vec2(8.0, 240.0);
+	float fine_grain = hash21(floor(p * grain_scale));
+	float coarse_grain = hash21(floor(p * 3.7));
+	float speckle = smoothstep(0.28, 0.92, fine_grain) * 0.11;
+	float wear = (coarse_grain - 0.5) * 0.055;
+	ALBEDO = asphalt_tone + vec3(wear + speckle);
+	ROUGHNESS = 0.94;
+	SPECULAR = 0.22;
+}
+"""
+	var asphalt := ShaderMaterial.new()
+	asphalt.shader = asphalt_shader
 	road.material_override = asphalt
 	add_child(road)
 	road.create_trimesh_collision()
