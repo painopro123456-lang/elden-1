@@ -57,6 +57,7 @@ func build(track_name: String) -> bool:
 	_add_kerbs()
 	_add_barriers()
 	_add_trackside_details()
+	_add_circuit_facilities()
 	_add_start_line()
 	return true
 
@@ -431,6 +432,70 @@ func _add_trackside_details() -> void:
 			stripe.position = Vector3(p.x, 1.67, p.z)
 			stripe.material_override = accent_material
 			add_child(stripe)
+
+
+func _add_circuit_facilities() -> void:
+	var stand_frame := _make_material(Color("#252d37"), 0.62, 0.42)
+	var stand_seat := _make_material(Color("#b8c0c8"), 0.72, 0.12)
+	var roof_material := _make_material(Color("#111820"), 0.42, 0.38)
+	var lamp_material := StandardMaterial3D.new()
+	lamp_material.albedo_color = Color("#fff0cf")
+	lamp_material.emission_enabled = true
+	lamp_material.emission = Color("#ffdca0")
+	lamp_material.emission_energy_multiplier = 2.2
+	var count := centerline.size()
+	var spacing: int = maxi(1, count / 7)
+	for i in range(spacing / 2, count, spacing):
+		var side := _side_at(i)
+		var direction := -1.0 if (i / spacing) % 2 == 0 else 1.0
+		var width: float = left_widths[i] if direction < 0.0 else right_widths[i]
+		var base: Vector3 = centerline[i] + side * direction * (width + 34.0)
+		var next_index: int = (i + 3) % count
+		var tangent := (centerline[next_index] - centerline[i]).normalized()
+		var stand := Node3D.new()
+		stand.name = "Grandstand"
+		stand.position = base
+		stand.rotation.y = atan2(-tangent.x, -tangent.z)
+		add_child(stand)
+		for tier in range(4):
+			var row := MeshInstance3D.new()
+			var row_mesh := BoxMesh.new()
+			row_mesh.size = Vector3(25.0, 0.55, 2.0)
+			row.mesh = row_mesh
+			row.position = Vector3(0, 1.0 + tier * 0.85, -tier * 1.45)
+			row.material_override = stand_seat
+			stand.add_child(row)
+		for support_x in [-12.0, 12.0]:
+			var support := MeshInstance3D.new()
+			var support_mesh := BoxMesh.new()
+			support_mesh.size = Vector3(0.42, 7.2, 0.42)
+			support.mesh = support_mesh
+			support.position = Vector3(support_x, 3.4, -2.0)
+			support.material_override = stand_frame
+			stand.add_child(support)
+		var roof := MeshInstance3D.new()
+		var roof_mesh := BoxMesh.new()
+		roof_mesh.size = Vector3(27.0, 0.45, 9.0)
+		roof.mesh = roof_mesh
+		roof.position = Vector3(0, 7.2, -2.0)
+		roof.material_override = roof_material
+		stand.add_child(roof)
+		var mast := MeshInstance3D.new()
+		var mast_mesh := CylinderMesh.new()
+		mast_mesh.top_radius = 0.12
+		mast_mesh.bottom_radius = 0.22
+		mast_mesh.height = 18.0
+		mast.mesh = mast_mesh
+		mast.position = Vector3(direction * 24.0, 9.0, 8.0)
+		mast.material_override = stand_frame
+		stand.add_child(mast)
+		var lamp_bar := MeshInstance3D.new()
+		var lamp_mesh := BoxMesh.new()
+		lamp_mesh.size = Vector3(4.8, 0.35, 0.55)
+		lamp_bar.mesh = lamp_mesh
+		lamp_bar.position = Vector3(direction * 24.0, 18.0, 8.0)
+		lamp_bar.material_override = lamp_material
+		stand.add_child(lamp_bar)
 
 func _add_start_line() -> void:
 	var line := MeshInstance3D.new()
