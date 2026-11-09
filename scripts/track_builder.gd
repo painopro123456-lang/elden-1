@@ -107,25 +107,60 @@ func _load_geojson(path: String) -> bool:
 	if not parsed is Dictionary:
 		load_error = "Circuit GeoJSON is invalid: " + path
 		return false
-	var features: Array = parsed.get("features", [])
-	if features.is_empty():
+	var features_value: Variant = parsed.get("features", [])
+	if not features_value is Array or features_value.is_empty():
 		load_error = "Circuit GeoJSON has no features: " + path
 		return false
-	var geometry: Dictionary = features[0].get("geometry", {})
-	var coordinates: Array = geometry.get("coordinates", [])
-	if geometry.get("type", "") == "MultiLineString" and not coordinates.is_empty():
-		coordinates = coordinates[0]
+	var feature: Variant = features_value[0]
+	if not feature is Dictionary:
+		load_error = "Circuit GeoJSON feature is malformed: " + path
+		return false
+	var geometry_value: Variant = feature.get("geometry", {})
+	if not geometry_value is Dictionary:
+		load_error = "Circuit GeoJSON geometry is malformed: " + path
+		return false
+	var coordinates_value: Variant = geometry_value.get("coordinates", [])
+	if not coordinates_value is Array:
+		load_error = "Circuit GeoJSON coordinates are malformed: " + path
+		return false
+	var coordinates: Array = coordinates_value
+	if str(geometry_value.get("type", "")) == "MultiLineString":
+		var longest_line: Array = []
+		for candidate in coordinates:
+			if candidate is Array and candidate.size() > longest_line.size():
+				longest_line = candidate
+		coordinates = longest_line
 	if coordinates.size() < 20:
 		load_error = "Circuit GeoJSON has too few coordinates: " + path
 		return false
-	var origin_lon := float(coordinates[0][0])
-	var origin_lat := float(coordinates[0][1])
+	var origin_found := false
+	var origin_lon := 0.0
+	var origin_lat := 0.0
+	for coordinate in coordinates:
+		if not coordinate is Array or coordinate.size() < 2:
+			continue
+		var lon_value: Variant = coordinate[0]
+		var lat_value: Variant = coordinate[1]
+		if (typeof(lon_value) != TYPE_FLOAT and typeof(lon_value) != TYPE_INT) or (typeof(lat_value) != TYPE_FLOAT and typeof(lat_value) != TYPE_INT):
+			continue
+		origin_lon = float(lon_value)
+		origin_lat = float(lat_value)
+		if is_finite(origin_lon) and is_finite(origin_lat):
+			origin_found = true
+			break
+	if not origin_found:
+		load_error = "Circuit GeoJSON has no valid coordinate pair: " + path
+		return false
 	var lat_scale := cos(deg_to_rad(origin_lat)) * 111320.0
 	for coordinate in coordinates:
 		if not coordinate is Array or coordinate.size() < 2:
 			continue
-		var lon := float(coordinate[0])
-		var lat := float(coordinate[1])
+		var lon_value: Variant = coordinate[0]
+		var lat_value: Variant = coordinate[1]
+		if (typeof(lon_value) != TYPE_FLOAT and typeof(lon_value) != TYPE_INT) or (typeof(lat_value) != TYPE_FLOAT and typeof(lat_value) != TYPE_INT):
+			continue
+		var lon := float(lon_value)
+		var lat := float(lat_value)
 		if not is_finite(lon) or not is_finite(lat):
 			continue
 		var x := (lon - origin_lon) * lat_scale
@@ -356,6 +391,8 @@ func _add_kerbs() -> void:
 	_add_segmented_strip("RightKerbs", right_vertices, right_indices, red, white)
 
 func _add_segmented_strip(name: String, vertices: PackedVector3Array, indices: PackedInt32Array, red: Material, white: Material) -> void:
+	# Build each kerb quad from one original centre-line segment. Never join
+	# separated stripe groups, which used to create long diagonal triangles.
 	for segment in range(2):
 		var arrays := []
 		arrays.resize(Mesh.ARRAY_MAX)
@@ -364,22 +401,24 @@ func _add_segmented_strip(name: String, vertices: PackedVector3Array, indices: P
 		for i in range(centerline.size()):
 			if (i / 5) % 2 != segment:
 				continue
+			var next_point := (i + 1) % centerline.size()
+			var base := selected_vertices.size()
 			selected_vertices.append(vertices[i * 2])
 			selected_vertices.append(vertices[i * 2 + 1])
-		var vertex_count := selected_vertices.size()
-		for i in range(0, vertex_count, 2):
-			var next_pair := (i + 2) % vertex_count
-			selected_indices.append_array(PackedInt32Array([i, i + 1, next_pair, i + 1, next_pair + 1, next_pair]))
+			selected_vertices.append(vertices[next_point * 2])
+			selected_vertices.append(vertices[next_point * 2 + 1])
+			selected_indices.append_array(PackedInt32Array([base, base + 1, base + 2, base + 1, base + 3, base + 2]))
+		if selected_vertices.is_empty():
+			continue
 		arrays[Mesh.ARRAY_VERTEX] = selected_vertices
 		arrays[Mesh.ARRAY_INDEX] = selected_indices
 		var mesh := ArrayMesh.new()
-		if selected_vertices.size() >= 4:
-			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-			var instance := MeshInstance3D.new()
-			instance.name = name + ("Red" if segment == 0 else "White")
-			instance.mesh = mesh
-			instance.material_override = red if segment == 0 else white
-			add_child(instance)
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		var instance := MeshInstance3D.new()
+		instance.name = name + ("Red" if segment == 0 else "White")
+		instance.mesh = mesh
+		instance.material_override = red if segment == 0 else white
+		add_child(instance)
 
 func _add_barriers() -> void:
 	var rail_material := _make_material(Color("#68727b"), 0.42, 0.72)
@@ -511,4 +550,4 @@ func _add_start_line() -> void:
 func get_start_position() -> Vector3:
 	if centerline.is_empty():
 		return Vector3.ZERO
-	return centerline[0] + Vector3(0, 0.62, 0)
+	return centerline[0] + Vector3(0, 0.08, 0)
