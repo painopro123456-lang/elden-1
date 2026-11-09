@@ -46,7 +46,7 @@ func _physics_process(delta: float) -> void:
 	var wheel_rotation := speed * delta / 0.49
 	for wheel_part in rolling_wheels:
 		if is_instance_valid(wheel_part):
-			wheel_part.rotate_object_local(Vector3.UP, wheel_rotation)
+			wheel_part.rotate_object_local(Vector3.RIGHT, wheel_rotation)
 	telemetry_changed.emit(absf(speed) * 3.6)
 
 func _team_color(name: String) -> Color:
