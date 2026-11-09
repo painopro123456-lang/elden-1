@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: elden-1-windows-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   windows-build:
     name: Windows x64 executable
