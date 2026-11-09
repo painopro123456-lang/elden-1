@@ -5,18 +5,18 @@ const DEFAULT_HALF_WIDTH := 7.0
 const KERB_WIDTH := 1.15
 const BARRIER_OFFSET := 15.0
 const TRACK_FILES := {
-	"BAHRAIN": "res://data/tracks/Sakhir.txt",
+	"BAHRAIN": "res://data/tracks/Sakhir.csv",
 	"JEDDAH": "res://data/tracks/Jeddah.geojson",
-	"MELBOURNE": "res://data/tracks/Melbourne.txt",
-	"SUZUKA": "res://data/tracks/Suzuka.txt",
+	"MELBOURNE": "res://data/tracks/Melbourne.csv",
+	"SUZUKA": "res://data/tracks/Suzuka.csv",
 	"MONACO": "res://data/tracks/Monaco.geojson",
-	"SILVERSTONE": "res://data/tracks/Silverstone.txt",
-	"SPA-FRANCORCHAMPS": "res://data/tracks/Spa.txt",
-	"MONZA": "res://data/tracks/Monza.txt",
+	"SILVERSTONE": "res://data/tracks/Silverstone.csv",
+	"SPA-FRANCORCHAMPS": "res://data/tracks/Spa.csv",
+	"MONZA": "res://data/tracks/Monza.csv",
 	"SINGAPORE": "res://data/tracks/Singapore.geojson",
-	"AUSTIN": "res://data/tracks/Austin.txt",
-	"MEXICO CITY": "res://data/tracks/MexicoCity.txt",
-	"ABU DHABI": "res://data/tracks/YasMarina.txt"
+	"AUSTIN": "res://data/tracks/Austin.csv",
+	"MEXICO CITY": "res://data/tracks/MexicoCity.csv",
+	"ABU DHABI": "res://data/tracks/YasMarina.csv"
 }
 
 var centerline := PackedVector3Array()
