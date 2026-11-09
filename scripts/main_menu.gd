@@ -51,9 +51,43 @@ var team_name_label: Label
 var team_status_label: Label
 var track_screen: Control
 var page_root: Control
+var graphics_quality := "HIGH"
+var fullscreen_enabled := false
+var vsync_enabled := true
+var settings_config := ConfigFile.new()
 
 func _ready() -> void:
+	_load_settings()
+	_apply_graphics_settings()
 	_build_home()
+
+func _load_settings() -> void:
+	var err := settings_config.load("user://elden1_settings.cfg")
+	if err == OK:
+		graphics_quality = str(settings_config.get_value("video", "quality", "HIGH"))
+		fullscreen_enabled = bool(settings_config.get_value("video", "fullscreen", false))
+		vsync_enabled = bool(settings_config.get_value("video", "vsync", true))
+	if not ["LOW", "MEDIUM", "HIGH", "ULTRA"].has(graphics_quality):
+		graphics_quality = "HIGH"
+
+func _save_settings() -> void:
+	settings_config.set_value("video", "quality", graphics_quality)
+	settings_config.set_value("video", "fullscreen", fullscreen_enabled)
+	settings_config.set_value("video", "vsync", vsync_enabled)
+	settings_config.save("user://elden1_settings.cfg")
+
+func _apply_graphics_settings() -> void:
+	match graphics_quality:
+		"LOW":
+			get_viewport().msaa_3d = Viewport.MSAA_DISABLED
+		"MEDIUM":
+			get_viewport().msaa_3d = Viewport.MSAA_2X
+		"HIGH":
+			get_viewport().msaa_3d = Viewport.MSAA_4X
+		"ULTRA":
+			get_viewport().msaa_3d = Viewport.MSAA_8X
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if vsync_enabled else DisplayServer.VSYNC_DISABLED)
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen_enabled else DisplayServer.WINDOW_MODE_WINDOWED)
 
 func _style_panel(panel: PanelContainer, color: Color, border: Color = LINE) -> void:
 	var style := StyleBoxFlat.new()
@@ -358,7 +392,7 @@ func _on_nav_pressed(destination: String) -> void:
 		"GARAGE":
 			_show_garage()
 		"SETTINGS":
-			_show_info("SETTINGS", "Graphics and control settings are not wired up yet.")
+			_show_settings()
 
 func _show_garage() -> void:
 	if is_instance_valid(page_root):
@@ -456,6 +490,98 @@ func _on_team_selected(index: int) -> void:
 	if is_instance_valid(team_status_label):
 		team_status_label.text = "CURRENT ENTRY  /  " + selected_team.to_upper()
 
+func _show_settings() -> void:
+	if is_instance_valid(page_root):
+		page_root.queue_free()
+	if is_instance_valid(track_screen):
+		track_screen.queue_free()
+	track_screen = null
+	var settings_root := Control.new()
+	settings_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(settings_root)
+	var background := ColorRect.new()
+	background.color = BG
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	settings_root.add_child(background)
+	var kicker := _label("ELDEN 1  /  CONFIGURATION", 11, RED, true)
+	kicker.anchor_left = 0.075
+	kicker.anchor_right = 0.8
+	kicker.anchor_top = 0.08
+	kicker.anchor_bottom = 0.12
+	settings_root.add_child(kicker)
+	var heading := _label("SETTINGS", 42, WHITE, true)
+	heading.anchor_left = 0.075
+	heading.anchor_right = 0.8
+	heading.anchor_top = 0.14
+	heading.anchor_bottom = 0.23
+	settings_root.add_child(heading)
+	var back := _button("←  BACK")
+	back.anchor_left = 0.82
+	back.anchor_right = 0.925
+	back.anchor_top = 0.085
+	back.anchor_bottom = 0.145
+	back.pressed.connect(_build_home)
+	settings_root.add_child(back)
+	var panel := PanelContainer.new()
+	panel.anchor_left = 0.075
+	panel.anchor_right = 0.925
+	panel.anchor_top = 0.29
+	panel.anchor_bottom = 0.79
+	_style_panel(panel, PANEL, LINE)
+	settings_root.add_child(panel)
+	var rows := VBoxContainer.new()
+	rows.add_theme_constant_override("separation", 24)
+	panel.add_child(rows)
+	var quality_row := HBoxContainer.new()
+	quality_row.add_theme_constant_override("separation", 20)
+	rows.add_child(quality_row)
+	var quality_label := _label("GRAPHICS QUALITY", 16, WHITE, true)
+	quality_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	quality_row.add_child(quality_label)
+	var quality_picker := OptionButton.new()
+	quality_picker.custom_minimum_size = Vector2(230, 48)
+	var qualities := ["LOW", "MEDIUM", "HIGH", "ULTRA"]
+	for quality in qualities:
+		quality_picker.add_item(quality)
+	quality_picker.select(qualities.find(graphics_quality))
+	quality_picker.item_selected.connect(_on_quality_selected)
+	quality_row.add_child(quality_picker)
+	var fullscreen_toggle := CheckBox.new()
+	fullscreen_toggle.text = "FULLSCREEN DISPLAY"
+	fullscreen_toggle.button_pressed = fullscreen_enabled
+	fullscreen_toggle.toggled.connect(_on_fullscreen_toggled)
+	rows.add_child(fullscreen_toggle)
+	var vsync_toggle := CheckBox.new()
+	vsync_toggle.text = "VERTICAL SYNC"
+	vsync_toggle.button_pressed = vsync_enabled
+	vsync_toggle.toggled.connect(_on_vsync_toggled)
+	rows.add_child(vsync_toggle)
+	rows.add_child(_label("Changes apply immediately and are saved on this PC.", 12, MUTED))
+	var footer := _label("VIDEO  /  DISPLAY", 10, MUTED, true)
+	footer.anchor_left = 0.075
+	footer.anchor_right = 0.925
+	footer.anchor_top = 0.91
+	footer.anchor_bottom = 0.95
+	settings_root.add_child(footer)
+
+func _on_quality_selected(index: int) -> void:
+	var qualities := ["LOW", "MEDIUM", "HIGH", "ULTRA"]
+	if index < 0 or index >= qualities.size():
+		return
+	graphics_quality = qualities[index]
+	_apply_graphics_settings()
+	_save_settings()
+
+func _on_fullscreen_toggled(enabled: bool) -> void:
+	fullscreen_enabled = enabled
+	_apply_graphics_settings()
+	_save_settings()
+
+func _on_vsync_toggled(enabled: bool) -> void:
+	vsync_enabled = enabled
+	_apply_graphics_settings()
+	_save_settings()
 func _show_info(title_text: String, body_text: String) -> void:
 	var overlay := AcceptDialog.new()
 	overlay.title = title_text
